@@ -45,6 +45,27 @@ These tripwires require Josh's explicit acknowledgment to proceed. They cannot b
 **Rationale:** Production data changes that aren't version-controlled are invisible to the rest of the system and cannot be reproduced or rolled back.
 **Action when fired:** Halt. Surface to Josh. Require the change to be expressed as a version-controlled migration or script.
 
+### T-006: Agent output containing credential values
+**Source:** Session 001 security incident postmortem (2026-05-13)
+**Last reviewed:** 2026-05-13
+**Detection:** Any agent-produced document, code, or output containing strings matching: API key prefixes (`sk_`, `pk_`, `key_`, `AC` followed by 32 hex chars), JWT patterns (`eyJ` followed by base64), high-entropy strings adjacent to `key=`/`token=`/`secret=`/`password=` patterns.
+**Rationale:** The Architect produced PROJECT_INVENTORY.md containing five live secrets read from `.env.local`. GitHub push protection blocked the leak, but the prompt-level rule was missing.
+**Action when fired:** Halt, redact the values, surface to Josh before any commit.
+
+### T-007: Agents reading .env* file contents
+**Source:** Session 001 security incident postmortem (2026-05-13)
+**Last reviewed:** 2026-05-13
+**Detection:** Any agent that reads `.env.local`, `.env.production`, or any `.env*` file beyond verifying its existence (via `ls` or `git status`).
+**Rationale:** Reading secret values into context creates exposure risk even when the values aren't immediately written to output.
+**Action when fired:** Halt. Verify the agent only needs to confirm existence, not read contents.
+
+### T-008: Broad git staging commands
+**Source:** Session 001 incident cleanup (2026-05-13)
+**Last reviewed:** 2026-05-13
+**Detection:** Any use of `git add -A`, `git add .`, or `git add *` by an agent.
+**Rationale:** Broad staging swept in orphaned files (`.claude/settings.local.json` and `scripts/check-calls.ts`) that violated the session plan. Agents must stage specific files only.
+**Action when fired:** Halt. Replace with targeted `git add <file>` commands listing exactly the intended files.
+
 ---
 
 ## Soft tripwires — Flag and proceed with caution
