@@ -113,3 +113,53 @@ The `amp_` prefix and `proscore_provider_id` FK survive in the repo until ADR-00
 ### Postmortem (appended 2026-05-15)
 
 SECURITY INCIDENT (resolved): PROJECT_INVENTORY.md included five live secrets read from .env.local. GitHub push protection blocked the leak before it reached the remote. All five secrets rotated externally; exposed values are dead. File scrubbed, commit amended, pushed clean. ROOT CAUSE: no prompt-level rule prohibited agents from reproducing .env contents in output. FOLLOW-UP: add T-006 and T-007 to TRIPWIRES.md next session. NOTE: .claude/settings.local.json added to .gitignore during cleanup. scripts/check-calls.ts remains untracked, deferred to ADR-003.
+
+---
+
+## Session 002 — Security incident cleanup
+**Date:** 2026-05-15
+**Duration:** ~30 minutes
+**Participants:** Main-thread Claude, CEO (Josh)
+
+### What happened
+- `/session-start` opened the session; orientation surfaced that Session 001's commit `64ef65d` had been blocked by GitHub Push Protection and was sitting locally unpushed.
+- Josh identified the cause: the Architect-generated `docs/PROJECT_INVENTORY.md` from Session 001 reproduced five live secret values it had read from `.env.local` (Retell API key, Twilio auth token, Twilio account SID, Supabase anon key, Supabase service role key). All five were rotated externally before this session began, so the exposed values are dead.
+- `.env.local` confirmed not tracked (gitignored at `.gitignore:34` via `.env*`).
+- Five lines (`docs/PROJECT_INVENTORY.md` lines 160–164) replaced with redacted markers; non-secret env entries (`TWILIO_PHONE_NUMBER`, `NEXT_PUBLIC_APP_URL`, `AMP_PLUMBER_AGENT_ID`, `AMP_PLUMBER_LLM_ID`, `AMP_INTERNAL_TEST_ORG_ID`) preserved.
+- Repo-wide credential-pattern scan against all tracked files came back clean across five patterns (`key_…`, `sk_(live|test)_…`, `pk_(live|test)_…`, `AC[hex]{32}`, `eyJ…` JWTs).
+- First amend attempt (`git add -A`) overreached and pulled in `.claude/settings.local.json` and `scripts/check-calls.ts` — both flagged in Session 001's "let ADR-003 decide" directive. Rolled back via `git rm --cached` + re-amend.
+- `.claude/settings.local.json` added to `.gitignore` so it stops re-appearing in `git status`. `scripts/check-calls.ts` left untracked, fate still deferred to ADR-003.
+- Postmortem appended to Session 001 entry above.
+- Final amended commit `f24c2f5` contains exactly four files: `.gitignore`, `docs/DECISIONS.md` (ADR-002, original Session 001 content), `docs/PROJECT_INVENTORY.md` (scrubbed), `docs/SESSION_LOG.md` (postmortem).
+- Session 001's blocked commit `64ef65d` orphaned in reflog.
+
+### What got decided
+- `.claude/settings.local.json` is per-machine config and gitignored permanently. Recorded in `.gitignore` and the Session 001 postmortem. Not a full ADR — too narrow.
+
+### What got deferred
+- **T-006 and T-007** (the new tripwires this incident exposes) to be drafted next session. Covers: (a) prohibition on reproducing `.env` contents in agent output, and (b) Architect inventory output must redact secret values by default.
+- All Session 001 open items remain open (ADR-003, the wedge ADR, etc.) — this session diverted to incident response and did not advance them.
+
+### What got blocked
+- `git push origin main` from inside the session intercepted by Claude Code's auto-mode guardrail (blocks direct push to default branch). Josh ran the push manually mid-session; `origin/main` is now at `f24c2f5`. The Session 002 entry commit (`07abdc6`, this commit) is the one remaining unpushed at session-end.
+
+### What's open for next session
+- **Verify push landed** on `origin/main` (commit `f24c2f5` on top of `d98c799`, with `64ef65d` orphaned).
+- **Draft T-006 and T-007** in `docs/TRIPWIRES.md` per the Session 001 postmortem follow-up. T-006: prohibit any reproduction of `.env*` contents in agent output. T-007: Architect inventories that read secret-bearing files must redact values by default and emit only key names + presence/rotation status.
+- **ADR-003 (Constitutional cleanup plan)** — still the load-bearing deliverable Session 001 queued.
+- All other Session 001 open items remain open (cleanup-PR strategy decision, cutover window for the destructive rename, NORTH_STAR.md ADR-placeholder numbering refresh).
+
+### What needs Josh
+- Run `git push origin main` once more to land the Session 002 entry commit (`07abdc6`). The rewritten Session 001 commit (`f24c2f5`) is already on the remote.
+- Approve ADR-003 at the start of next session before any cleanup code is touched (carryover from Session 001).
+
+### Tripwires fired
+- **T-004 (Constitution violations)** — retroactively, Session 001's `PROJECT_INVENTORY.md` violated Constitution §4.1 ("Secrets… Never in committed files") and §6.1 ("We do not log… secrets"). The violation was not detected by the agent at write-time; it was caught by GitHub Push Protection at the network boundary. This is the failure mode T-006 and T-007 are designed to prevent.
+
+### Constitution version at session start: v1
+### Constitution version at session end: v1 (no amendments)
+
+### Notes for future-Claude
+The Architect sub-agent has Read access to the working tree and will read `.env.local` if asked to inventory environment configuration. Until T-006 and T-007 are codified, the main thread is the only check against secret reproduction in Architect output. Josh's external rotation of all five exposed secrets is what made this incident recoverable; the next one may not be.
+
+The post-incident commit hash is `f24c2f5`. The blocked, orphaned commit was `64ef65d`. If anyone is reading this and sees `64ef65d` referenced anywhere, it never reached the remote and was rewritten — do not try to recover it; it carries the leak.
