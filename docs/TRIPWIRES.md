@@ -172,6 +172,13 @@ These tripwires have not bitten us yet but are predicted based on the architectu
 **Detection:** Voice agent template deployed without approved consent language, or consent language modified by customer in a way that weakens it
 **Rationale:** Legal exposure in two-party consent jurisdictions.
 
+### T-205: Anthropic ships customer-facing real-time capability for CSB or Cowork
+**Source:** ADR-004 (Wedge and product-category commitment), AMP Ecosystem Scout brief 2026-05-17
+**Last reviewed:** 2026-05-17
+**Detection:** Anthropic publishes (via official announcement, changelog, partner directory, or Claude Cowork/CSB connector list) any real-time, customer-facing, autonomous capability for Claude for Small Business or Claude Cowork — voice connector (Twilio, Retell, ElevenLabs, or equivalent), live chat agent reaching end-users on the customer's behalf, autonomous after-hours customer-facing mode, or any equivalent capability that crosses the customer-facing real-time category boundary. Back-office connectors (Stripe, Slack, Salesforce, additional accounting/CRM tools) do NOT fire this tripwire.
+**Rationale:** AMP's wedge defensibility (ADR-004) rests on the structural gap between CSB's owner-initiated back-office posture and AMP's autonomous customer-facing voice-first posture. If Anthropic crosses the customer-facing real-time category boundary, North Star kill-criterion #4 must be re-evaluated within 90 days. The trigger is the category boundary, not feature volume — one customer-facing connector fires this tripwire, ten new back-office connectors do not.
+**Action when fired:** Escalate to Architect. Architect re-evaluates AMP's wedge defensibility against North Star kill-criterion #4 and produces an ADR within 14 days proposing either (a) re-affirm the wedge with new defensibility reasoning, (b) narrow the wedge, or (c) trigger the kill-criterion #4 90-day window per North Star.
+
 ---
 
 ## Audit schedule

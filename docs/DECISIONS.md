@@ -137,3 +137,92 @@ Four tactical answers Josh gave alongside this decision, captured here so they c
 ---
 
 *Future decisions append below this line. Decisions are numbered sequentially (ADR-002, ADR-003, etc.) and never renumbered.*
+
+---
+
+## ADR-004 — Vertical Wedge and Product-Category Commitment: Customer-Facing Channels, Home Services First
+
+**Date:** 2026-05-17
+**Status:** Accepted
+**Decided by:** CEO (Josh) with PM/Architect recommendation, informed by AMP Ecosystem Scout brief
+**Supersedes:** None (overwrites the NORTH_STAR.md v1 placeholder reservation of ADR-002 for the wedge decision; the wedge ADR receives the next number after ADR-003 per the note at the end of ADR-002)
+**Superseded by:** None
+
+### Context
+
+On 2026-05-13, Anthropic launched [Claude for Small Business](https://www.anthropic.com/news/claude-for-small-business) (CSB): a packaged set of 15 agentic workflows, 15 reusable skills, and connectors to 8 back-office SaaS tools (Intuit QuickBooks, PayPal, HubSpot, Canva, Docusign, Google Workspace, Microsoft 365, and one further unnamed connector), delivered as a plugin inside Claude Cowork to Pro, Max, and Teams plan users. The named example customers — a 15-person HVAC, a 30-person landscaping company, a 50-person real estate brokerage — overlap directly with AMP's North Star wedge candidates.
+
+The scout brief (`docs/scout/2026-05-17_claude-for-small-business.md`) establishes one load-bearing fact: across every primary source verified, CSB has no voice, no telephony, no PSTN, no SMS, no autonomous after-hours customer-facing channel, and no end-user identity model. CSB is owner-initiated, human-in-the-loop, and operates inside Claude Desktop. It is back-office automation for the operator. AMP's wedge — customer-facing operational agents in place of the missing receptionist — is structurally untouched.
+
+This is the strategic inflection point the North Star always anticipated. A horizontal platform has entered the SMB segment AMP targets. The wedge ADR can no longer be deferred. Three things must be decided now and recorded so they are not re-litigated next quarter: (1) what category AMP commits to, (2) which vertical leads, and (3) how CSB is evaluated against North Star kill-criterion #4.
+
+### Decision
+
+AMP makes the following six commitments:
+
+1. **AMP's wedge is customer-facing channels, voice first.** AMP will not build back-office automation. The surface AMP owns is the phone, the website chat, the SMS thread, and the lead email — not QuickBooks, HubSpot, or Docusign. CSB owns back-office; AMP owns the real-time customer-facing layer CSB structurally cannot reach (no PSTN, no live channel, no autonomous after-hours mode).
+
+2. **AMP will not become a Claude Cowork or Claude for Small Business plugin.** AMP is a standalone platform with its own dashboard, billing, and brand. AMP will not deliver through Claude Desktop. Building inside Cowork would surrender distribution, pricing ceiling, and category position to Anthropic. This commitment is consistent with ADR-001 and is made explicit here so the temptation cannot be re-introduced silently.
+
+3. **First vertical: home services.** Specifically HVAC, plumbing, electrical, roofing, and general contracting. The lead capability is the inbound voice agent. Home services has the loudest after-hours pain, the cleanest missed-call-equals-lost-revenue math, the largest underserved population, and a warm-channel asset through ProScore (per North Star). CSB naming HVAC in Anthropic's own example list strengthens — does not weaken — this choice.
+
+4. **AMP will not build horizontal back-office capabilities for at least 12 months.** No invoice chasers, no payroll workflows, no QuickBooks integrations, no contract reviewers. CSB exists for that. AMP's job is what CSB cannot do. Re-evaluation date: 2027-05-17.
+
+5. **A new predictive tripwire is added: T-205.** If Anthropic ships any real-time, customer-facing, autonomous capability for Claude for Small Business or Claude Cowork — voice connector, live chat agent, autonomous after-hours customer mode — the Architect re-evaluates AMP's wedge against North Star kill-criterion #4. The trigger is the category boundary (autonomous customer-facing real-time interaction), not back-office connectors. Adding a Stripe or Slack connector to CSB does not fire T-205. Adding a Twilio or Retell connector does.
+
+6. **North Star kill-criterion #4 is evaluated and not triggered as of 2026-05-17.** Claude for Small Business does not make AMP's value proposition redundant. AMP's promise to a contractor — "never miss a call again" — is not addressed by CSB at all. CSB validates the segment and warms AMP's funnel by educating SMB owners on agentic workflows. This evaluation is recorded so the question is not re-litigated next quarter.
+
+### Alternatives considered
+
+**Option B: Become a Claude for Small Business plugin or Cowork extension.** Rejected. Trades AMP's category position, pricing ceiling, and brand for short-term distribution. The North Star is explicit that AMP's buyer "will not buy a product that requires technical configuration"; CSB requires the operator to live inside Claude Desktop and learn its plugin model. ADR-001's Option B reasoning applies: a thin coordination layer on top of a horizontal platform is not defensible.
+
+**Option C: Lead with dental, legal intake, or real estate instead of home services.** Rejected. Dental is more competitive (Weave, NexHealth, Dental Intelligence already entrenched). Legal intake is high-value but slow-cycle and consent-heavy in a way that complicates Constitution §4.3. Real estate is fragmented across IDX/CRM stacks and the buyer is less time-squeezed than a contractor. Home services wins on after-hours pain, missed-call math, addressable population, and warm-channel access through ProScore.
+
+**Option D: Build back-office workflows alongside customer-facing agents to broaden surface area.** Rejected. Violates Constitution §8 ("No frameworks added to solve a problem that doesn't exist yet" — extended here to product scope) and contradicts North Star ("Not a horizontal platform"). CSB now occupies that space; competing horizontally with Anthropic is a losing posture. AMP wins by going deep on what CSB cannot do.
+
+### Reasoning
+
+1. **CSB is a tailwind, not a threat, because the jobs-to-be-done do not overlap.** CSB is owner-initiated, in-app, business-hours, back-office. AMP is autonomous, customer-facing, twenty-four-hour, voice-first. The HVAC owner who deploys CSB this month still loses the same calls to voicemail they lost last month. The two products are adjacent, not competitive.
+
+2. **The architectural posture mismatch is not a feature gap Anthropic can close with a connector.** CSB is structurally a 9-to-5 product because it requires human-in-the-loop activation. A voice agent at the end of a phone line is structurally a 24-hour product. Closing that gap would require Anthropic to rebuild CSB around a multi-channel orchestration substrate with end-user identity — precisely the substrate ADR-001 commits AMP to owning. That is a roadmap commitment Anthropic has not made and would take engineering quarters to make.
+
+3. **Anthropic is paying to educate AMP's buyer.** The 10-city in-person fluency tour (Chicago, Tulsa, Dallas, NJ, Baton Rouge, Birmingham, Salt Lake City, Baltimore, San Jose, Indianapolis) is market education AMP would otherwise have to fund. The owner who has spent a half-day with Claude understanding "agentic workflow" is dramatically easier to close on AMP than a cold prospect.
+
+4. **Voice quality is a vertical-specific defensibility play, not a horizontal Anthropic product.** A voice agent that knows what a "rough-in" is, what a "P-trap" is, what the seasonal demand pattern is, and what the local permit office requires is depth Anthropic's 36M-business framing cannot economically build. AMP wins by going deep where Anthropic must stay shallow.
+
+### Trade-offs accepted
+
+- **AMP forgoes the back-office surface area entirely for at least 12 months.** Customers will ask for it. We say no and point them at CSB. The 2027-05-17 re-evaluation date is the only window where this commitment is revisited.
+- **Home-services dependency.** If the home-services thesis is wrong, AMP loses 12 months. Mitigation: the kill-criteria in the North Star are dated; we measure at the 12-month-after-primary mark, not after the first quarter.
+- **Anthropic gatekeeper risk persists.** Anthropic could ship a voice connector at any time. T-205 is the detection mechanism. The Constitution §3.2 multi-provider mandate already ensures AMP can swap Retell/ElevenLabs/Twilio if needed; the relevant exposure is competitive, not infrastructural.
+- **The defensible adjacency ordering is implicit but not pre-committed.** Once voice ships, the natural extensions are SMS, chat, and email — all customer-facing channels per Constitution §10.4. The order in which these ship after voice is a Build Phase decision, not a Foundational one, and is deliberately left out of this ADR.
+
+### Kill-criterion #4 evaluation (2026-05-17)
+
+North Star kill-criterion #4: "A horizontal platform ships an offering that makes AMP's value proposition redundant for our target customer, and we cannot find a defensible differentiator within ninety days."
+
+**Verdict: Not triggered.**
+
+Claude for Small Business does not make AMP's value proposition redundant. AMP's value proposition to a home-services contractor is "never miss a call again, including at 11pm on Saturday, including when you're on a roof." CSB has no phone, no SMS, no autonomous after-hours mode, and no end-user identity layer. There is no overlap on the customer-facing job-to-be-done. The differentiator is not a feature AMP must scramble to build within 90 days; it is the category boundary CSB has not crossed and shows no roadmap intent to cross.
+
+This evaluation is recorded with a date so the next quarter's review can pick it up where this one left off. The trigger for re-evaluation is T-205 firing or a material change in Anthropic's published roadmap, not the calendar.
+
+### What would change this decision
+
+We would revisit ADR-004 if:
+
+1. T-205 fires (Anthropic ships a voice, real-time chat, or autonomous after-hours capability for CSB or Cowork).
+2. The home-services thesis fails the 12-month-after-primary kill-criteria check (per North Star).
+3. A different vertical produces faster traction in early customer development than home services, and the difference is large enough to overcome switching cost (unlikely; recorded for completeness).
+4. The 2027-05-17 back-office embargo review concludes that horizontal expansion is now defensible against CSB's by-then-known surface area.
+
+### References
+
+- [Introducing Claude for Small Business — Anthropic](https://www.anthropic.com/news/claude-for-small-business) (announcement, 2026-05-13; verified by CEO against official source)
+- `docs/scout/2026-05-17_claude-for-small-business.md` — full ecosystem scout brief informing this decision
+- ADR-001 — Orchestration Model: AMP as the Orchestration Brain (the architectural commitment this wedge decision extends)
+- ADR-002 — AMP-Supabase separation (the operational independence this wedge decision compounds)
+- Constitution §3.2 — Multi-provider mandate (the infrastructural commitment that makes wedge-defensible voice possible)
+- Constitution §10 — Multi-agent runtime architecture (the substrate the customer-facing wedge runs on)
+- North Star — "Who AMP is for," "What AMP is explicitly not," kill-criterion #4
+- TRIPWIRES.md — T-205 added in the same change as this ADR
