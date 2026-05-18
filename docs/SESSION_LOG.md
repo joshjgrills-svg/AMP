@@ -163,3 +163,52 @@ SECURITY INCIDENT (resolved): PROJECT_INVENTORY.md included five live secrets re
 The Architect sub-agent has Read access to the working tree and will read `.env.local` if asked to inventory environment configuration. Until T-006 and T-007 are codified, the main thread is the only check against secret reproduction in Architect output. Josh's external rotation of all five exposed secrets is what made this incident recoverable; the next one may not be.
 
 The post-incident commit hash is `f24c2f5`. The blocked, orphaned commit was `64ef65d`. If anyone is reading this and sees `64ef65d` referenced anywhere, it never reached the remote and was rewritten — do not try to recover it; it carries the leak.
+
+---
+
+## Session 003 — ADR-004 wedge decision + T-205 tripwire
+**Date:** 2026-05-17
+**Duration:** ~30 minutes
+**Participants:** Main-thread Claude, CEO (Josh)
+
+### What happened
+- Verified that ADR-004, T-205, and the Scout brief (`docs/scout/2026-05-17_claude-for-small-business.md`) had been drafted in a prior pass and were sitting uncommitted on the stale `session-001-tripwires-followup` branch.
+- Confirmed ADR-004 covers all six commitments Josh specified: (1) wedge = customer-facing channels, voice first; (2) AMP is not a Cowork/CSB plugin; (3) first vertical = home services (HVAC, plumbing, electrical, roofing, GC) with voice agent lead; (4) no horizontal back-office for ≥12 months (re-evaluate 2027-05-17); (5) T-205 predictive tripwire scoped to the customer-facing real-time category boundary; (6) kill-criterion #4 explicitly NOT triggered as of 2026-05-17.
+- Confirmed Anthropic announcement URL (`https://www.anthropic.com/news/claude-for-small-business`) and Scout brief path are both cited in the ADR.
+- Created new branch `session-002-wedge-adr-004` off `origin/main` (which was at `5efad18` — Session 001 follow-up PR #2 had already merged).
+- Staged exactly 3 files by name per T-008 discipline: `docs/DECISIONS.md`, `docs/TRIPWIRES.md`, `docs/scout/2026-05-17_claude-for-small-business.md`. `scripts/check-calls.ts` left untracked — exactly the situation T-008 was created to prevent.
+- Committed (`44a8103`) and pushed.
+- Opened PR #3: https://github.com/joshjgrills-svg/AMP/pull/3
+
+### What got decided
+- **ADR-004** (now committed, awaiting Josh merge): see DECISIONS.md lines 143-228. Vertical wedge, product-category commitment, and 12-month back-office embargo recorded.
+
+### What got deferred
+- **ADR-003 (Constitutional cleanup plan)** — still the load-bearing deliverable; carried over from Sessions 001 and 002.
+- **`scripts/check-calls.ts` fate** (commit or delete) — explicitly deferred to ADR-003. Still untracked.
+- **NORTH_STAR.md placeholder ADR-number refresh** — still stale; the ADR-002 reservation note in DECISIONS.md is the authoritative correction until NORTH_STAR.md is next revised.
+
+### What got blocked
+- Nothing.
+
+### What's open for next session
+- Josh reviews and merges PR #3.
+- ADR-003 (Constitutional cleanup plan) drafted and approved before any cleanup code is touched.
+- All Session 001/002 carryover (cleanup PR strategy, cutover window for the destructive rename, NORTH_STAR.md numbering refresh).
+
+### What needs Josh
+- **Review and merge PR #3**: https://github.com/joshjgrills-svg/AMP/pull/3 (3 files, +247 lines).
+- Approve ADR-003 at the start of next session.
+
+### Tripwires fired
+- **T-008 (preventive)** — the temptation to use `git add -A` to sweep the working tree was avoided by staging the three intended files by name. `scripts/check-calls.ts` correctly stayed out of the commit. The tripwire functioned as designed.
+
+### Constitution version at session start: v1
+### Constitution version at session end: v1 (no amendments)
+
+### Notes for future-Claude
+The branch is `session-002-wedge-adr-004` (Josh's naming) but this is the **third** SESSION_LOG entry — Sessions 000, 001, 002 already exist. The "Session 002" branch and commit naming reflects Josh's view that the 2026-05-15 security-cleanup entry (currently logged as Session 002) was really Session 001 incident response, not a fresh session of new work. The SESSION_LOG stays append-only; the branch name is the historical record. Do not retroactively renumber.
+
+ADR-004 was drafted in a prior pass (already in the working tree before this session opened); this session's role was to (a) verify its content, (b) move it onto a clean branch, (c) commit exactly the intended 3 files, (d) push, (e) open the PR. The drafting work is preserved in the file itself.
+
+`scripts/check-calls.ts` remains untracked at session end. Do not commit it ad hoc; let ADR-003 decide.
