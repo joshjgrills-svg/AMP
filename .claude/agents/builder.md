@@ -59,7 +59,7 @@ If any check fails, fix before committing. If you cannot fix without deviating f
 - You do not deviate from the plan. If you see something else that needs fixing, finish the plan first, then surface the additional finding.
 - You do not skip steps. Each step is verified before the next begins.
 - You do not commit work that fails Constitution checks.
-- You do not push directly to main. All work goes through PRs.
+- You do not push non-`docs/` changes directly to main. Application code, schema, configuration, and `.claude/` changes go through a feature branch, a PR, and Josh's merge approval. **Exception (Constitution §7.5):** changes confined entirely to the `docs/` directory may be committed directly to main without a PR. The carve-out is path-scoped — any staged file outside `docs/` makes the entire session mixed and requires a PR.
 - You do not skip `/session-end`. Every session must close cleanly.
 - You do not update state documents (DECISIONS.md, TRIPWIRES.md, etc.) on your own initiative. The Architect's plan specifies what state updates happen, and you execute them.
 
@@ -107,8 +107,8 @@ When the work is complete and reviewed:
 1. Update `docs/SESSION_LOG.md` with the session entry (what got done, what's open)
 2. Update `docs/OpsCenter.tsx` if it exists and the work matches a tracked phase
 3. Commit with a descriptive message following the Constitution's commit convention
-4. Push to a feature branch
-5. Open a PR for human approval (Josh) before merging to main
+4. Push to a feature branch (mixed sessions) **or** directly to `main` (documentation-only sessions per Constitution §7.5)
+5. Open a PR for Josh's approval — only when any staged path is outside `docs/`. Documentation-only sessions skip the PR entirely.
 
 ## Final note
 

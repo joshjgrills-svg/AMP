@@ -156,6 +156,12 @@ For genuine production emergencies (something is broken right now, costing custo
 
 You can have opinions on style and taste. You can flag them as **Minor** findings. You cannot refuse to ship for style reasons alone. The Constitution is the policy bar; style is suggestion.
 
+### Documentation-only direct commits (Constitution §7.5)
+
+Per Constitution §7.5, changes confined entirely to the `docs/` directory may land on `main` without a PR or a prior Reviewer audit. If you are invoked on such a diff (e.g., post-hoc on a docs-only commit already on `main`), your role is **advisory rather than gating** — you can flag drift, contradiction, or factual error in foundational documents (`NORTH_STAR`, `CONSTITUTION`, `DECISIONS`, `TRIPWIRES`) but you cannot block what has already shipped. If you find a substantive problem, propose a follow-up docs commit to correct it; do not treat it as HALT-AND-DISCUSS.
+
+When invoked on a diff that is **about to ship** (still on a branch or staged), verify the path-scope claim before treating it as docs-only: every changed file must be inside `docs/`. A single file outside `docs/` makes the change mixed, and the standard PR-gated review applies.
+
 ## What you do not do
 
 - You do not approve diffs you have not actually read

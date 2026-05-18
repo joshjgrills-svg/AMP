@@ -226,3 +226,80 @@ We would revisit ADR-004 if:
 - Constitution §10 — Multi-agent runtime architecture (the substrate the customer-facing wedge runs on)
 - North Star — "Who AMP is for," "What AMP is explicitly not," kill-criterion #4
 - TRIPWIRES.md — T-205 added in the same change as this ADR
+
+---
+
+## ADR-005 — Constitutional Amendment: Documentation-Only Changes Skip the PR Gate
+
+**Date:** 2026-05-17
+**Status:** Accepted
+**Decided by:** CEO (Josh) with PM/Architect recommendation
+**Supersedes:** None (amends Constitution v1 → v1.1, adding Section 7.5)
+**Superseded by:** None
+
+### Context
+
+Until now, every change to the AMP repository — including pure documentation edits to `docs/NORTH_STAR.md`, `docs/CONSTITUTION.md`, `docs/SESSION_LOG.md`, and the like — required a feature branch, a pull request, and Josh's manual merge. This was a deliberate choice for the foundation phase: a uniform discipline is easier to enforce than a tiered one while the project is still finding its rhythm.
+
+Three sessions in, the friction is asymmetric. Documentation PRs (PR #2 for the Session 001 tripwire follow-up, PR #3 for ADR-004 and SESSION_LOG appendage) consume founder attention but carry no runtime or security risk. Code PRs — none yet, since the ADR-003 cleanup has not begun — will consume the same attention but carry actual exposure. Treating both the same dilutes the signal of "this PR needs Josh's eyes" exactly when code work is about to begin.
+
+### Decision
+
+Amend Constitution v1 to v1.1 by adding Section 7.5 ("PR discipline and the documentation carve-out"). The rule:
+
+- Changes confined to the `docs/` directory may be committed directly to `main` by the Builder without a pull request. Covered paths: `NORTH_STAR.md`, `CONSTITUTION.md`, `RUNTIME_ARCHITECTURE.md`, `OPERATING_RHYTHM.md`, `DECISIONS.md`, `TRIPWIRES.md`, `SESSION_LOG.md`, `README.md`, plus anything under `docs/scout/` or `docs/research/`.
+- All other changes — application code, schema, configuration, `.claude/` agent definitions, or any path outside `docs/` — still require a feature branch, a PR, a Reviewer audit, and Josh's explicit merge approval.
+- The carve-out is **path-scoped, not intent-scoped**: a change that touches both `docs/` and any non-`docs/` file is NOT documentation-only; the entire change goes through the standard PR flow.
+
+### Alternatives considered
+
+**Option B: Keep the uniform PR gate for all changes.** Rejected. The friction tax falls disproportionately on documentation, where risk is zero, and dulls Josh's attention for code PRs where risk is real.
+
+**Option C: Tier by file count or diff size, not by path.** Rejected. "Small enough to commit direct" is subjective and erodes the policy bar. Path is mechanically checkable; line count is not.
+
+**Option D: Intent-based carve-out ("if it's just docs in spirit").** Rejected. Mixed changes are exactly the dangerous case — a small `.claude/` agent update bundled with a `docs/` edit would slip through without review. Path-scoped enforcement is the safer default.
+
+**Option E: Auto-merge PRs on a docs-only label via GitHub Actions.** Rejected as premature infrastructure. The same outcome (no Josh review for docs) can be achieved with a one-line Constitutional rule and zero CI to maintain.
+
+### Reasoning
+
+1. **Risk asymmetry is real and growing.** As ADR-003 (Constitutional cleanup) and subsequent code work begin, Josh's PR review attention becomes a load-bearing resource. Spending it on `SESSION_LOG.md` appendages is misallocation.
+2. **`docs/` is genuinely runtime-safe.** Nothing under `docs/` is read at runtime by the application. The worst-case impact of a bad docs commit is a confused future agent, fixed by a follow-up docs commit. No customer-facing impact, no security exposure.
+3. **`.claude/` is excluded by design.** Agent definitions, slash commands, and `settings.local.json` are not "documentation" — they configure the agent system's behavior. A bad change there can cause the next session to misbehave in ways that DO touch code. Hence the explicit exclusion in Section 7.5.
+4. **Path-scoped enforcement is auditable.** A future Reviewer (or a human spot-checking) can verify any direct-to-main commit was docs-only by checking the file paths alone. No semantic interpretation required.
+
+### Trade-offs accepted
+
+- **Documentation drift risk increases.** Without a PR, there is no second pair of eyes on docs changes. Mitigation: the Reviewer agent can still be invoked on a docs commit; this is recommended for any change to `NORTH_STAR.md`, `CONSTITUTION.md`, or `DECISIONS.md` (the load-bearing trio). The carve-out permits direct commit; it does not require it.
+- **The Constitution itself can be edited and pushed without a PR going forward.** Mitigation: Constitutional amendments still require the Section 9 procedure (proposal, C-suite review, CEO approval, DECISIONS.md entry, version bump). The carve-out lowers merge friction; it does not lower the amendment bar.
+- **"Mostly docs" PRs disappear as a category.** A change that needs to update both Constitution and a builder.md (like this very change) goes through the full PR flow. This is the intended behavior — it is the safer default.
+
+### What would change this decision
+
+We would revisit ADR-005 if:
+
+1. A documentation drift incident demonstrates that direct-to-main docs commits are corrupting the foundation faster than they save founder time.
+2. Josh decides he wants visibility into every doc change as a discipline signal, independent of risk.
+3. The team grows beyond Josh + agents, and "documentation reviewed by another human" becomes valuable in itself.
+
+### Implementation implications
+
+This amendment touches:
+
+- `docs/CONSTITUTION.md` — version bumped to v1.1, Section 7.5 added
+- `docs/DECISIONS.md` — this ADR appended
+- `.claude/commands/session-end.md` — Step 3 updated to branch on session type (docs-only vs. mixed)
+- `.claude/agents/builder.md` — "no direct push to main" rule amended to reflect the carve-out
+- `.claude/agents/reviewer.md` — special case added: docs-only changes may arrive on main without a prior Reviewer audit
+
+Because this change touches both `docs/` and `.claude/`, it is itself NOT eligible for the new carve-out — it goes through the standard PR flow. The next docs-only session (e.g., a `SESSION_LOG.md` append with no code) is the first one that benefits from the new rule.
+
+**Open follow-up:** `docs/OPERATING_RHYTHM.md` (lines 22-30) describes the standard session flow including "Josh approves the PR" as a mandatory step. This line is now stale for docs-only sessions. It is intentionally not updated in this change — that update is itself docs-only and can be made directly to `main` after ADR-005 lands, as the first exercise of the new carve-out. Flagged for the next session.
+
+**Numbering note:** ADR-004 (the wedge decision) is currently in flight in PR #3 and is not yet on `main`. ADR-005 is appended here on its own branch; the file will show ADR-001, ADR-002, ADR-005 until PR #3 merges, after which ADR-004 slots in by date order between ADR-002 and ADR-005. The ADRs are numbered sequentially; they are not required to appear in numeric order in the file once both PRs land.
+
+### References
+
+- Constitution v1.1, Section 7.5 (the rule this ADR establishes)
+- Constitution Section 9 (the amendment procedure followed to land this change)
+- Prior friction examples: PR #2 (Session 001 tripwire additions), PR #3 (ADR-004 + SESSION_LOG)

@@ -213,3 +213,56 @@ The branch is `session-002-wedge-adr-004` (Josh's naming) but this is the **thir
 ADR-004 was drafted in a prior pass (already in the working tree before this session opened); this session's role was to (a) verify its content, (b) move it onto a clean branch, (c) commit exactly the intended 3 files, (d) push, (e) open the PR. The drafting work is preserved in the file itself.
 
 `scripts/check-calls.ts` remains untracked at session end. Do not commit it ad hoc; let ADR-003 decide.
+
+---
+
+## Session 004 — Workflow amendment (Constitution v1.1, ADR-005)
+**Date:** 2026-05-17
+**Duration:** ~30 minutes
+**Participants:** Main-thread Claude, CEO (Josh)
+
+### What happened
+- Josh asked to amend the workflow so documentation-only changes stop going through PRs while code changes keep the human gate.
+- Constitution amended **v1 → v1.1** per the Section 9 procedure: new **Section 7.5 ("PR discipline and the documentation carve-out")** added.
+- The rule: changes confined to `docs/` may commit directly to `main` without a PR; any change touching application code, schema, configuration, `.claude/`, or anything outside `docs/` still requires a feature branch, PR, Reviewer audit, and Josh's merge approval. **Path-scoped, not intent-scoped** — a single non-`docs/` file makes the entire change mixed.
+- **ADR-005** recorded in `docs/DECISIONS.md` per Section 9.
+- `.claude/commands/session-end.md` Step 3 rewritten to branch on session type.
+- `.claude/agents/builder.md` "no direct push to main" rule amended.
+- `.claude/agents/reviewer.md` special case added: docs-only direct commits are advisory-only for the Reviewer.
+- Branch `session-004-workflow-amendment` created off `origin/main` (independent of PR #3). 5 files staged by name (T-008), committed (`fc0efff`), pushed.
+- **PR #4 opened:** https://github.com/joshjgrills-svg/AMP/pull/4
+
+### What got decided
+- **ADR-005:** Documentation-only changes skip the PR gate. See DECISIONS.md for full rationale, alternatives, trade-offs, and what-would-change criteria.
+
+### What got deferred
+- **`docs/OPERATING_RHYTHM.md` update** — lines 22-30 list "Josh approves the PR" as a mandatory session step. This is now stale for docs-only sessions but intentionally NOT fixed in PR #4. After PR #4 merges, the OPERATING_RHYTHM fix is itself docs-only and becomes the **first exercise of the new §7.5 carve-out** — committed directly to main, no PR. Flagged in ADR-005.
+- All prior carryover: **ADR-003 (Constitutional cleanup plan)** remains the load-bearing next deliverable; the 27 inventory issues from Session 001 remain open until ADR-003 lands.
+
+### What got blocked
+- Nothing at write-time. PR #4 hit a trivial merge conflict with `main` after PR #3 merged (both PRs append to `docs/SESSION_LOG.md` and `docs/DECISIONS.md`); resolved by rebasing PR #4 onto the post-PR-#3 main and keeping both sets of entries in chronological order.
+
+### What's open for next session
+- **Update `docs/OPERATING_RHYTHM.md`** as the first §7.5 direct-to-main commit.
+- **ADR-003 (Constitutional cleanup plan)** drafted and approved before any cleanup code is touched.
+
+### What needs Josh
+- **Review and merge PR #4** (this session): https://github.com/joshjgrills-svg/AMP/pull/4 — 6 files (post-rebase), Constitution amendment + ADR-005 + agent file updates + SESSION_LOG entry
+- Approve ADR-003 at the start of the next session
+
+### Tripwires fired
+- **T-008 (preventive, functioned as designed)** — file staging during the rebase resolution was per-file (`git add docs/DECISIONS.md`, `git add docs/SESSION_LOG.md`); `scripts/check-calls.ts` still correctly untracked, still deferred to ADR-003.
+
+### Constitution version at session start: v1
+### Constitution version at session end: v1.1 (Section 7.5 added per ADR-005)
+
+### Notes for future-Claude
+The branch naming this session (`session-004-workflow-amendment`) coincidentally matches the SESSION_LOG entry number (Session 004), unlike the earlier session today (`session-002-wedge-adr-004` → Session 003 in the log). Do not try to enforce a convention here. Josh names branches by intent; the SESSION_LOG numbers sequentially. The two systems are independent.
+
+This is the **second session of 2026-05-17**. Two sessions in one day is fine when each closes cleanly; the SESSION_LOG entries make the boundary clear.
+
+The §7.5 carve-out is a **one-way unlock** — it permits direct-to-main commits for docs but does not require them. The Reviewer can still be invoked on a docs commit, and should be for any change to the load-bearing trio (NORTH_STAR, CONSTITUTION, DECISIONS). The carve-out reduces friction; it does not require lower discipline.
+
+ADR-005 itself was NOT eligible for the carve-out it establishes, because the change touched `.claude/` files. That's the path-scoped rule working as designed.
+
+The "Numbering note" inside ADR-005 says "ADR-004 is currently in flight in PR #3 and is not yet on `main`." That sentence was historically true at write-time and is preserved per the DECISIONS.md append-only policy — ADRs are not edited after being recorded. By the time you read this, both ADR-004 and ADR-005 are on main and the file shows them in chronological order (ADR-004 above ADR-005).

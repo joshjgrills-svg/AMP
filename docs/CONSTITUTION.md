@@ -1,9 +1,9 @@
 # AMP — Technical Constitution
 
-**Version:** v1
+**Version:** v1.1
 **Author:** Senior Lead Architect (with C-suite review)
-**Last updated:** 2026-05-12
-**Supersedes:** v0 (drafted earlier same day; revised after CEO acceptance of multi-agent platform vision and Option A orchestration model per ADR-001)
+**Last updated:** 2026-05-17
+**Supersedes:** v1 (2026-05-12; amended per ADR-005 to add Section 7.5 — documentation-only changes may commit directly to main without a pull request)
 **Status:** This document is policy, not suggestion. Once ratified, the agent team enforces it without exception. Changes require explicit amendment via the procedure in Section 9.
 **Next review:** Quarterly, or upon any architectural inflection point
 
@@ -364,6 +364,22 @@ Decisions are categorized:
 - **Exploratory (80% confidence required):** UI, copy, onboarding flow. Deploy, learn, iterate.
 
 When the architect brings a decision to Josh, it includes the category, the confidence level, and what would change the confidence.
+
+### 7.5 PR discipline and the documentation carve-out
+
+All work touching application code, schema, configuration, `.claude/` agent definitions, or any path outside `docs/` requires a feature branch, a pull request, a Reviewer audit, and Josh's explicit merge approval. This is the human gate that protects the runtime from unreviewed risk.
+
+**Documentation-only carve-out:** Changes confined to the `docs/` directory — `NORTH_STAR.md`, `CONSTITUTION.md`, `RUNTIME_ARCHITECTURE.md`, `OPERATING_RHYTHM.md`, `DECISIONS.md`, `TRIPWIRES.md`, `SESSION_LOG.md`, `README.md`, and any files under `docs/scout/` or `docs/research/` — may be committed directly to `main` by the Builder without a pull request.
+
+The distinction is risk: documentation carries no runtime or security risk; code does. A typo fix in `NORTH_STAR.md` should not consume a merge cycle. A line-change in `app/api/webhooks/retell/route.ts` must.
+
+The carve-out is **path-scoped, not intent-scoped**. A "documentation" change that also touches `.claude/agents/builder.md`, `package.json`, or any other non-`docs/` file is NOT documentation-only — the entire change goes through the standard PR flow. There is no "mostly docs" exception.
+
+Sessions that produce only `docs/` changes commit those changes directly to `main` at `/session-end` and do not open a PR. Sessions that produce any non-`docs/` change open a PR for the entire session's work.
+
+Constitutional amendments themselves still follow Section 9 (proposal, C-suite review, CEO approval, DECISIONS.md entry, version bump). The carve-out lowers merge friction; it does not lower the amendment bar. A Section 9 amendment that touches only `CONSTITUTION.md` and `DECISIONS.md` may commit directly to `main`; one that also rewires agent files goes through a PR (this is exactly how ADR-005 itself landed).
+
+Amendments to this carve-out require a Constitutional amendment per Section 9.
 
 ---
 

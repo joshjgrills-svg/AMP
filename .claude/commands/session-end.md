@@ -27,10 +27,25 @@ If SESSION_LOG.md has more than 10 entries, archive the oldest entries to `docs/
 
 ## Step 3: Commit and push
 
-1. Stage the state document updates
-2. Commit with a message following the Constitution's commit convention (descriptive, references plan if applicable)
+First determine whether this session's changes are **documentation-only** or **mixed** (per Constitution §7.5):
+
+- **Documentation-only:** every staged path is confined to `docs/` (`NORTH_STAR.md`, `CONSTITUTION.md`, `RUNTIME_ARCHITECTURE.md`, `OPERATING_RHYTHM.md`, `DECISIONS.md`, `TRIPWIRES.md`, `SESSION_LOG.md`, `README.md`, `docs/scout/*`, `docs/research/*`).
+- **Mixed:** any staged path touches application code, schema, configuration, `.claude/` agent definitions, or any path outside `docs/`. The carve-out is path-scoped, not intent-scoped — a "mostly docs" change with one `.claude/` file is mixed, not documentation-only.
+
+### If documentation-only (Constitution §7.5 carve-out):
+
+1. Stage the state document updates by file name (never `git add -A` — see T-008)
+2. Commit with a descriptive message
+3. Push directly to `main` — no PR required, no feature branch required
+4. Do not open a PR
+
+### If mixed:
+
+1. Stage the state document updates by file name (never `git add -A` — see T-008)
+2. Commit on the current feature branch
 3. Push to the feature branch
-4. If a PR is not yet open and there is shippable work, open one for Josh's review
+4. If a PR is not yet open, open one for Josh's review
+5. Do NOT push to `main` directly — the PR is the gate
 
 ## Step 4: Surface what needs Josh
 
