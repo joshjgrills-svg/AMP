@@ -266,3 +266,7 @@ The §7.5 carve-out is a **one-way unlock** — it permits direct-to-main commit
 ADR-005 itself was NOT eligible for the carve-out it establishes, because the change touched `.claude/` files. That's the path-scoped rule working as designed.
 
 The "Numbering note" inside ADR-005 says "ADR-004 is currently in flight in PR #3 and is not yet on `main`." That sentence was historically true at write-time and is preserved per the DECISIONS.md append-only policy — ADRs are not edited after being recorded. By the time you read this, both ADR-004 and ADR-005 are on main and the file shows them in chronological order (ADR-004 above ADR-005).
+
+### Process note (appended 2026-05-18)
+
+PROCESS NOTE: The §7.5 docs-only carve-out was first exercised (commit `8dbf768`, Vercel follow-up logging) while PR #4 — the PR that introduces §7.5 — was still open. The rule was used a few minutes before it was formally merged to main. No harm: PR #4 merged shortly after and the rule is now ratified. Recorded for honesty of the history. Lesson: a rule should be merged before it is relied upon; next time, merge first, then use.
