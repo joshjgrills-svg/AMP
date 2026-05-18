@@ -192,6 +192,7 @@ The post-incident commit hash is `f24c2f5`. The blocked, orphaned commit was `64
 - Nothing.
 
 ### What's open for next session
+- **HIGH PRIORITY — Vercel Preview/Development env vars missing** *(added 2026-05-17 post-close, between Session 003 and Session 004, via the Constitution §7.5 carve-out)*: Every branch and PR deployment fails the Vercel build with `Missing required env var: NEXT_PUBLIC_SUPABASE_URL`. Production has the Supabase vars; Preview and Development do not. **Fix:** add `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to Vercel's Preview and Development environments for the AMP project. Until fixed, the failed Vercel check on PRs is expected noise and does not block merges. Priority: fix early next session so PR checks stop showing false failures.
 - Josh reviews and merges PR #3.
 - ADR-003 (Constitutional cleanup plan) drafted and approved before any cleanup code is touched.
 - All Session 001/002 carryover (cleanup PR strategy, cutover window for the destructive rename, NORTH_STAR.md numbering refresh).
