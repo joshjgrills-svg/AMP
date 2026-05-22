@@ -405,8 +405,8 @@ We would revisit this amendment if:
 ## ADR-003 — Constitutional Cleanup Execution Plan
 
 **Date:** 2026-05-22
-**Status:** Proposed (pending CEO approval before any execution)
-**Decided by:** PM/Architect recommendation; awaiting CEO (Josh) approval
+**Status:** Approved with modifications (pending Phase 0 verification spike before any execution begins)
+**Decided by:** PM/Architect recommendation; CEO (Josh) approved with modifications 2026-05-22 (Session 006)
 **Supersedes:** None
 **Superseded by:** None
 
@@ -429,16 +429,17 @@ The wedge has sharpened since ADR-002 (Canadian sub-$2M plumbing/electrical/HVAC
 
 Execute the cleanup in **eight sequenced phases**, each a discrete commit (or PR) with explicit verification. Monorepo restructure is **deferred to a separate ADR (ADR-006 placeholder)**, not included in this plan — reasoning below.
 
-The phases:
+The phases (modified 2026-05-22 per CEO approval — Phase 0 added; old Phase 6 moved to Phase 1.5; old Phases 7/8 renumbered to 6/7):
 
-1. **Repo hygiene** (docs-only; direct to main per §7.5) — `.env.example`, `scripts/check-calls.ts` decision, `.gitignore` audit.
+0. **Verification spike** (no committed code unless Sentry install is verified clean) — Builder verifies (a) Sentry-on-Next-16 compatibility and (b) Retell dashboard URL change behavior in a scratch context. Either lifts overall plan confidence to 99% target or surfaces a concrete blocker that triggers an ADR-003 amendment before Phase 1 begins.
+1. **Repo hygiene + Vercel env-var unblock** (PR) — `.env.example`, `scripts/check-calls.ts` deletion, `.gitignore` audit, AND Vercel Preview/Development env-var configuration (HIGH PRIORITY carryover from Session 003) to unblock PR checks for all subsequent phases.
+1.5. **Decommission Claire-era surfaces** (Vercel dashboard + SESSION_LOG direct to main per §7.5) — verify and remove `claire-ai-beta.vercel.app`; reconcile Retell/Twilio resource inventory. Done BEFORE the cutover (not after, as originally planned) to eliminate one possible source of interference during the Phase 4 destructive rename.
 2. **Migrations baseline** (PR) — capture the live Supabase schema as `0000_baseline.sql` with proper header per §1.2; no functional change.
 3. **Pre-flight infrastructure** (PR) — Vitest + first webhook test, structured logger, Sentry install, env-var validation at boundary. Lands before the destructive rename so the rename has a safety net.
 4. **Cutover migration** (PR + Supabase apply + Vercel deploy + Retell dashboard change, executed in a bounded window) — schema rename + enum rename + FK drop + RLS policies + webhook URL versioning, all in one atomic deploy.
 5. **Scripts reconciliation** (PR) — update or delete the ten one-off scripts that reference `amp_*` names; resolve the `create-amp-agent.ts` schema drift; remove Claire-era hardcoded values.
-6. **Decommission Claire-era surfaces** (Vercel dashboard work; SESSION_LOG entry direct to main) — verify and remove `claire-ai-beta.vercel.app`; reconcile Retell/Twilio resource inventory.
-7. **`jsonb` Zod schemas + adapter pattern Phase 1** (PR) — Zod schemas for the seven `jsonb` columns; wrap Retell client first (it is on the live call path).
-8. **Index rename + enum rename + secondary cleanup** (PR) — non-load-bearing naming compliance items grouped because they share a migration shape.
+6. **`jsonb` Zod schemas + adapter pattern Phase 1** (PR) — Zod schemas for the seven `jsonb` columns; wrap Retell client first (it is on the live call path).
+7. **Index rename + enum rename + secondary cleanup** (PR) — non-load-bearing naming compliance items grouped because they share a migration shape.
 
 Monorepo restructure is **out of scope** for this ADR and tracked as ADR-006 (proposed). The restructure has the highest blast radius of any item in the inventory and gains nothing for the wedge (one app, no marketing site yet, no second customer surface). Doing it now compounds the cutover risk for zero customer value. Doing it before the marketing site or a second app is built is the right inflection point.
 
@@ -460,23 +461,67 @@ Each phase is one commit/PR (where applicable) with explicit verification. Where
 
 ---
 
-**Phase 1 — Repo hygiene** (docs/config only; direct to main per §7.5 IF the changes are docs-only; otherwise PR)
+**Phase 0 — Verification Spike** (no committed code unless Sentry install is verified clean)
 
-*Where:* **Codespace.**
+*Where:* **Codespace** for the Sentry check; **Retell dashboard** for the URL behavior check (against a scratch test agent, NOT the production plumber testbed).
 *Estimated time:* 30 minutes.
 
 Steps:
+1. **Sentry-on-Next-16 compatibility:** check `npm view @sentry/nextjs versions` for the latest version; check the Sentry changelog or release notes for Next.js 16 support; in a scratch branch, run `npm i @sentry/nextjs` followed by `npm run build`. Verify the build succeeds with no Sentry-related errors. Record the version installed and any wizard prompts that diverge from documented setup.
+2. **Retell dashboard URL change behavior:** in the Retell dashboard, create or use a scratch test agent (NOT the production plumber testbed agent `agent_58fbaa9f9eb2e1f6698e54bedd`). Change its webhook URL to a benign endpoint (e.g., a Vercel route that just logs the receipt). Observe: does the change take effect immediately? Does it require agent republish? Is there a propagation delay? Place a test call; verify which URL receives the webhook.
+3. Record findings as a brief paragraph appended to the Phase 0 session's SESSION_LOG entry (or as a dedicated note under `docs/research/` if findings are substantial).
+
+*Verification:*
+- **Pass condition:** Sentry installs and builds cleanly on Next.js 16.2.4; Retell URL change is a one-field edit that takes effect within seconds of dashboard save. Plan confidence lifts to 99% target; proceed to Phase 1.
+- **Blocker condition:** Sentry incompatible (or requires non-trivial workaround beyond the documented fallback); OR Retell URL change requires agent republish (which introduces its own downtime implications). Either triggers an ADR-003 amendment before Phase 1 begins.
+
+*Commit boundary:* Phase 0 produces no committed code unless the Sentry install on the scratch branch is rolled forward into Phase 3 (no need to throw away verified work). Findings are recorded via SESSION_LOG entry. If a blocker is surfaced, the ADR-003 amendment is itself a docs-only commit per §7.5.
+
+*Critical:* This phase MUST complete before Phase 1 begins. If a blocker is surfaced, the cleanup pauses until the amendment lands.
+
+---
+
+**Phase 1 — Repo hygiene + Vercel env-var unblock** (PR)
+
+*Where:* **Codespace** for file changes; **Vercel dashboard** for Preview/Development env-var configuration.
+*Estimated time:* 1 hour (30 min file changes + 30 min Vercel dashboard work).
+
+Steps:
 1. Create `.env.example` at repo root listing every variable currently in `.env.local` with a one-line comment per variable explaining what it is and where to obtain it. Use placeholder values; never copy real secrets (T-006, T-007).
-2. Make the `scripts/check-calls.ts` decision (see "scripts/check-calls.ts decision" section below). If **delete**, `git rm scripts/check-calls.ts`. If **archive**, move to `scripts/archive/check-calls.ts` and add `scripts/archive/` to the README's "deprecated" list.
+2. `git rm scripts/check-calls.ts` per the decision section below. (Decision: delete.)
 3. Verify `.gitignore` covers `.env*` (already confirmed; line 28).
 4. Audit `.gitignore` once more for any new gaps surfaced since Session 002 (e.g., `.next/`, `coverage/`, `*.tsbuildinfo` — all already present).
+5. **Vercel Preview/Development env-var unblock (HIGH PRIORITY carryover from Session 003):** add `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to Vercel's Preview and Development environments for the AMP project (use the same values currently in Production). This unblocks PR checks for all subsequent phases — without it, every PR (starting with Phase 2) will fail the Vercel build with `Missing required env var: NEXT_PUBLIC_SUPABASE_URL`. Dashboard work, not code; goes in the Phase 1 PR description as a checkbox.
 
 *Verification:*
 - `git status` shows `.env.example` tracked, `.env.local` untracked.
-- `scripts/check-calls.ts` is no longer untracked (either deleted or moved to `scripts/archive/`).
+- `scripts/check-calls.ts` is no longer untracked (deleted in step 2).
 - `cat .env.example` shows every variable; no real secrets are present.
+- A test PR against main (the Phase 2 PR is the natural validator) passes the Vercel build without missing-env-var errors on both Preview and Development.
 
-*Commit boundary:* one commit. Because `.env.example` is at repo root (not under `docs/`), this phase is NOT docs-only and requires a PR per §7.5.
+*Commit boundary:* one PR for file changes. Vercel dashboard env-var configuration is manual work that does not produce a commit but does need a checkbox in the Phase 1 PR description.
+
+---
+
+**Phase 1.5 — Decommission Claire-era surfaces** (Vercel dashboard + SESSION_LOG)
+
+*Where:* **Vercel dashboard** (manual), **Codespace** for the SESSION_LOG note.
+*Estimated time:* 30 minutes.
+
+**Position rationale (added 2026-05-22 per CEO approval):** Removing the Claire-era Vercel project BEFORE the Phase 4 cutover (rather than after, as originally planned) eliminates a possible source of interference during the destructive rename. If `claire-ai-beta.vercel.app` still serves traffic (or holds DNS, or has any webhook pointed at it), it is one more thing that could mask or compound a Phase 4 failure mode. Decommissioning first means Phase 4's cutover blast radius is bounded to a single Vercel project.
+
+Steps:
+1. In the Vercel dashboard, verify `claire-ai-beta.vercel.app` status. If it serves traffic, take it offline (or delete the project entirely if Josh confirms it is no longer needed for any purpose). Record the action.
+2. Audit Retell dashboard for any other webhook URLs pointing at `claire-ai-beta.vercel.app` (paranoid check — should be none).
+3. Audit Twilio dashboard for the phone number `+12494448711` configuration — confirm it routes to Retell agent `agent_58fbaa9f9eb2e1f6698e54bedd`, not to a Claire-era endpoint.
+4. Append a SESSION_LOG entry recording the decommission with timestamp and what was done.
+
+*Verification:*
+- `curl -I https://claire-ai-beta.vercel.app/` returns 404 or DNS NXDOMAIN.
+- No Retell webhook points at the Claire URL.
+- Twilio number routing confirmed correct.
+
+*Commit boundary:* docs-only SESSION_LOG append, direct to main per §7.5.
 
 ---
 
@@ -592,27 +637,7 @@ Steps:
 
 ---
 
-**Phase 6 — Decommission Claire-era surfaces** (Vercel dashboard + SESSION_LOG)
-
-*Where:* **Vercel dashboard** (manual), **Codespace** for the SESSION_LOG note.
-*Estimated time:* 30 minutes.
-
-Steps:
-1. In the Vercel dashboard, verify `claire-ai-beta.vercel.app` status. If it serves traffic, take it offline (or delete the project entirely if Josh confirms it is no longer needed for any purpose). Record the action.
-2. Audit Retell dashboard for any other webhook URLs pointing at `claire-ai-beta.vercel.app` (paranoid check — should be none).
-3. Audit Twilio dashboard for the phone number `+12494448711` configuration — confirm it routes to Retell agent `agent_58fbaa9f9eb2e1f6698e54bedd`, not to a Claire-era endpoint.
-4. Append a SESSION_LOG entry recording the decommission with timestamp and what was done.
-
-*Verification:*
-- `curl -I https://claire-ai-beta.vercel.app/` returns 404 or DNS NXDOMAIN.
-- No Retell webhook points at the Claire URL.
-- Twilio number routing confirmed correct.
-
-*Commit boundary:* docs-only SESSION_LOG append, direct to main per §7.5.
-
----
-
-**Phase 7 — Zod schemas for `jsonb` columns + Retell adapter** (PR)
+**Phase 6 — Zod schemas for `jsonb` columns + Retell adapter** (PR)
 
 *Where:* **Codespace.**
 *Estimated time:* 1 day.
@@ -634,7 +659,7 @@ Steps:
 
 ---
 
-**Phase 8 — Index rename + remaining cleanup** (PR)
+**Phase 7 — Index rename + remaining cleanup** (PR)
 
 *Where:* **Codespace** + **Supabase MCP** for the index rename migration.
 *Estimated time:* 2-3 hours.
@@ -732,7 +757,7 @@ Per `AGENTS.md`, Next.js 16 has breaking changes from training-data conventions.
 
 **CFO.** I am chasing two costs. First, Sentry has a free tier (5K events/month); at AMP's current zero-traffic state we are well under. Confirm we are on the free tier and that the plan does not add a paid dependency — §8 requires my explicit sign-off for paid external deps and I have not given it. Second, the cutover window is bounded but if it slips and an inbound call is missed during the window, we burn customer trust we have not yet built. The trade-off is acceptable because the plumber testbed is an internal test agent today, not a paying customer — but the moment AMP has a paying Canadian plumber, this kind of cutover requires a different model (zero-downtime, blue-green, or scheduled per customer). Flag for the Build Phase. **Resolution:** Sentry free-tier confirmed as part of Phase 3 verification. Cutover model flagged in "What Josh will hit next" — future cutovers under paying-customer load require a different pattern.
 
-**COO.** The manual surface in this plan is the part I worry about most. Four phases require dashboard work (Phase 4 Retell, Phase 4 Supabase apply via MCP, Phase 6 Vercel, Phase 6 Retell/Twilio audit). Each dashboard action is a place where the operating loop breaks — Josh does it once, no audit trail, no rollback automation. I want each manual dashboard step to be a single line in the PR description with a checkbox; Josh checks it as he goes; the SESSION_LOG entry for the cutover session preserves the record. I also want the Phase 4 cutover scheduled in advance (Sunday 09:00 ET is fine) and not slipped — slipping the window erodes the "bounded" property of the cutover. **Resolution:** Phase 4 PR description template includes a dashboard-step checklist; SESSION_LOG entry for the cutover session is mandatory; cutover window pinned to Sunday 2026-05-31 09:00-09:30 ET in this ADR.
+**COO.** The manual surface in this plan is the part I worry about most. Four phases require dashboard work (Phase 1.5 Vercel, Phase 1.5 Retell/Twilio audit, Phase 4 Retell, Phase 4 Supabase apply via MCP). Each dashboard action is a place where the operating loop breaks — Josh does it once, no audit trail, no rollback automation. I want each manual dashboard step to be a single line in the PR description with a checkbox; Josh checks it as he goes; the SESSION_LOG entry for the cutover session preserves the record. I also want the Phase 4 cutover scheduled in advance (Sunday 09:00 ET is fine) and not slipped — slipping the window erodes the "bounded" property of the cutover. **Resolution:** Phase 4 PR description template includes a dashboard-step checklist; SESSION_LOG entry for the cutover session is mandatory; cutover window pinned to Sunday 2026-05-31 09:00-09:30 ET in this ADR.
 
 **Real disagreement and resolution:** CTO wants the monorepo handled as a separate ADR (ADR-006); CSO is silent on the monorepo. CFO worries about the cutover-window risk for future paying customers; COO worries about the current cutover's manual surface. These are not in direct conflict — both COO and CFO want bounded, recorded cutover discipline; the difference is whether the discipline scales (CFO's concern). **Both resolved by** (a) recording the manual surface in PR checklists for THIS cutover, (b) flagging that future paying-customer cutovers require a different model (zero-downtime, scheduled per customer) as a Build Phase decision. CTO and the implicit "do not defer monorepo too long" position is resolved by promising an ADR-006 placeholder.
 
@@ -740,18 +765,19 @@ Per `AGENTS.md`, Next.js 16 has breaking changes from training-data conventions.
 
 This is a **Foundational decision (99% bar)** because it touches schema and security model — both explicitly named in §7.4 as Foundational.
 
-Per-component confidence:
+Per-component confidence (updated 2026-05-22 per CEO approval — Phase 0 added, Phase 1.5 added, Phase numbering shifted):
 
-- **Phase 1 (repo hygiene): 99%.** Trivial, well-understood, low blast radius.
+- **Phase 0 (verification spike): 100% binary** — either passes (proceed to Phase 1) or surfaces a blocker (triggers ADR-003 amendment). Either way the plan moves forward in a known direction; there is no "Phase 0 fails ambiguously" outcome.
+- **Phase 1 (repo hygiene + Vercel env-var unblock): 99%.** Trivial, well-understood, low blast radius. The added Vercel dashboard step is the same complexity as any other env-var configuration.
+- **Phase 1.5 (decommission Claire surfaces): 95%.** Dashboard work; `claire-ai-beta.vercel.app` current state unknown carries 5% uncertainty until verified.
 - **Phase 2 (migrations baseline): 95%.** Depends on faithful introspection of live schema. The drift between committed `schema.sql` and live DB is the unknown. Confidence rises to 99% after Phase 2 step 2 (the introspection step) completes.
-- **Phase 3 (pre-flight infrastructure): 85%.** Sentry-on-Next-16 is the open uncertainty. Vitest + structured logger + env Zod are 99%. Sentry alone is 80%. Mitigation strategies (option b: manual `@sentry/node` wire) bring overall phase confidence to 85% with a known fallback.
-- **Phase 4 (cutover): 90%.** Schema migration mechanics are well-understood (95%+). The Retell webhook URL behavior is the open uncertainty (80% on first attempt; rises to 99% after Builder verifies dashboard behavior in a scratch context). RLS policy shape is 95% (standard pattern). Overall: 90% pre-execution, with explicit Builder verification gate before live cutover that raises it to 99% before the window opens.
+- **Phase 3 (pre-flight infrastructure): 85% pre-spike, 99% post-spike.** Phase 0 resolves the Sentry-on-Next-16 uncertainty. Vitest + structured logger + env Zod are 99% on their own. Sentry alone is 80% pre-spike; post-spike either lifts to 99% or revises the plan via the `@sentry/node` fallback.
+- **Phase 4 (cutover): 90% pre-spike, 99% post-spike.** Phase 0 resolves the Retell URL behavior uncertainty. Schema migration mechanics are 95%+. RLS policy shape is 95% (standard pattern).
 - **Phase 5 (scripts reconciliation): 99%.** Pure code change, no live system touched.
-- **Phase 6 (decommission): 95%.** Dashboard work; "claire-ai-beta.vercel.app current state unknown" carries 5% uncertainty until verified.
-- **Phase 7 (Zod + adapter): 95%.** Well-understood pattern; first adapter pattern in the repo means some shape decisions get made and may need iteration.
-- **Phase 8 (index rename + cleanup): 99%.** Mechanical.
+- **Phase 6 (Zod + adapter): 95%.** Well-understood pattern; first adapter pattern in the repo means some shape decisions get made and may need iteration.
+- **Phase 7 (index rename + cleanup): 99%.** Mechanical.
 
-**Overall plan confidence: 95%** — below the 99% Foundational bar because of Phase 3 (Sentry) and Phase 4 (Retell URL behavior). The two named uncertainties are explicit and flagged for Builder verification during execution. The plan does not pretend to 99% certainty it does not have. If Josh wants 99% before approval, the path is to have the Builder run a 30-minute verification spike on (a) Sentry-on-Next-16 compatibility and (b) Retell dashboard URL change behavior, and report back before this ADR is ratified.
+**Overall plan confidence: Pre-spike: 95%. Post-spike: 99% target, contingent on no blocker discovery.** The two named uncertainties (Sentry-on-Next-16 compatibility, Retell dashboard URL change behavior) are now resolved by Phase 0 before Phase 1 begins. If Phase 0 surfaces a blocker on either count, the plan triggers an ADR-003 amendment before any further execution. The plan no longer carries un-verified uncertainty into the cleanup.
 
 ### Trade-offs accepted
 
@@ -779,24 +805,24 @@ This ADR would be re-evaluated post-execution if any phase's verification fails 
 - `.env.example` (Phase 1)
 - `supabase/migrations/20260522000000_baseline.sql` (Phase 2)
 - `supabase/migrations/20260522000100_rename_amp_tables_and_add_rls.sql` (Phase 4)
-- `supabase/migrations/20260522010000_rename_indexes.sql` (Phase 8)
+- `supabase/migrations/20260522010000_rename_indexes.sql` (Phase 7)
 - `app/api/webhooks/retell/v1/route.ts` (Phase 4, replaces old location)
 - `app/api/webhooks/retell/route.test.ts` or `app/api/webhooks/retell/v1/route.test.ts` (Phase 3)
 - `lib/log.ts` (Phase 3)
 - `lib/env.ts` (Phase 3)
-- `lib/schemas/{seven-jsonb-schemas}.ts` (Phase 7)
-- `lib/integrations/retell/index.ts` (Phase 7)
+- `lib/schemas/{seven-jsonb-schemas}.ts` (Phase 6)
+- `lib/integrations/retell/index.ts` (Phase 6)
 - `scripts/archive/{bind-phone,register-phone,attach-number-to-trunk}.ts` (Phase 5; existing files moved)
-- Sentry config files generated by Sentry wizard (Phase 3; exact list depends on wizard output)
+- Sentry config files generated by Sentry wizard (Phase 3; exact list depends on wizard output; Phase 0 may roll forward verified scratch install)
 
 **Files modified:**
 - `app/api/webhooks/retell/route.ts` → moved + table refs updated + console.* removed (Phase 3 + Phase 4)
 - `scripts/{check-schema,probe-schema,check-template,create-amp-agent,audit-*}.ts` → table refs updated, Claire-era values removed (Phase 5)
-- `package.json` → test scripts, db:migrate, engines field, new deps (Phases 3, 5, 7, 8)
+- `package.json` → test scripts, db:migrate, engines field, new deps (Phases 3, 5, 6, 7)
 - `tsconfig.json` → remove `"scripts/**"` exclude (Phase 5)
-- `app/layout.tsx` → title metadata (Phase 8)
-- `app/page.tsx` → holding page (Phase 8)
-- `app/globals.css` → remove font-family override (Phase 8)
+- `app/layout.tsx` → title metadata (Phase 7)
+- `app/page.tsx` → holding page (Phase 7)
+- `app/globals.css` → remove font-family override (Phase 7)
 - `.gitignore` → no expected changes (Phase 1 verification only)
 
 **Files deleted:**
@@ -804,10 +830,10 @@ This ADR would be re-evaluated post-execution if any phase's verification fails 
 - `scripts/check-calls.ts` (Phase 1)
 
 **Live system changes (where executed):**
-- **Supabase project `yxuhjxxbgbuznpoekwpj` (Phase 4 + Phase 8 via MCP `apply_migration`):** schema rename, FK drop, RLS policies, index rename.
-- **Vercel project (Phase 4 auto-deploy on PR merge; Phase 6 manual for Claire decommission):** new code deploy, env var addition for Sentry DSN (Phase 3), `claire-ai-beta` project deletion (Phase 6).
-- **Retell dashboard (Phase 4 manual):** webhook URL update.
-- **Twilio dashboard (Phase 6 audit only):** routing verification, no changes expected.
+- **Supabase project `yxuhjxxbgbuznpoekwpj` (Phase 4 + Phase 7 via MCP `apply_migration`):** schema rename, FK drop, RLS policies, index rename.
+- **Vercel project (Phase 1 manual for Preview/Development env vars; Phase 1.5 manual for Claire decommission; Phase 4 auto-deploy on PR merge):** Preview/Development env-var configuration, `claire-ai-beta` project deletion, new code deploy, env var addition for Sentry DSN (Phase 3).
+- **Retell dashboard (Phase 0 manual scratch test; Phase 4 manual production update):** scratch-agent URL behavior verification, then production plumber-testbed URL update.
+- **Twilio dashboard (Phase 1.5 audit only):** routing verification, no changes expected.
 
 **State document updates:**
 - `docs/DECISIONS.md` — this ADR appended on approval; potentially ADR-006 placeholder for monorepo deferral if Josh wants it tracked explicitly.
@@ -842,3 +868,55 @@ This ADR would be re-evaluated post-execution if any phase's verification fails 
 - `docs/PROJECT_INVENTORY.md` (2026-05-13) — the source of the 27 compliance issues
 - `docs/scout/2026-05-18_home-services-market.md` — customer-validation context for wedge scope
 - `docs/scout/2026-05-22_avoca-competitive-deep-dive.md` — competitive context informing why cleanup speed matters
+
+---
+
+## ADR-006 — Monorepo Restructure (Deferred)
+
+**Date:** 2026-05-22
+**Status:** Proposed placeholder
+**Decided by:** Reserved for future decision (placeholder created by ADR-003 with CEO approval, Session 006)
+**Supersedes:** None
+**Superseded by:** None
+
+### Context
+
+ADR-003 (Constitutional Cleanup Execution Plan, 2026-05-22) deferred the Constitution §2.1-mandated monorepo restructure (`apps/web`, `apps/marketing`, `packages/db`, `packages/ui`, `packages/agents`, `packages/orchestration`, `packages/shared`) to a future ADR. The deferral reasoning, recorded in ADR-003: the wedge does not need the monorepo today (one app, no marketing site yet, no second customer surface), and including the restructure in ADR-003 would have doubled the blast radius of the Constitutional cleanup for zero customer value.
+
+This placeholder reserves the ADR-006 number and names the trigger condition so the deferral does not silently extend forever. The CTO chair in ADR-003's C-suite review specifically asked for this placeholder; this entry satisfies that ask.
+
+### Trigger
+
+Execute the monorepo restructure no later than the earlier of:
+
+1. The first marketing site (`apps/marketing`) being built, OR
+2. The first second customer surface (a second `apps/*` package — e.g., a customer-facing dashboard separate from the operator dashboard), OR
+3. The first Build Phase milestone where adding a new package becomes load-bearing (e.g., an agent SDK that customers consume, a shared schema package that two apps depend on).
+
+When any of these triggers fires, this ADR is upgraded from Proposed placeholder to Accepted, with a full Decision section detailing the restructure plan, sequencing, and cutover approach.
+
+### Body
+
+TBD when triggered. The full ADR will cover at minimum:
+
+- Sequencing (which packages get carved out first; how the existing flat `app/`, `lib/`, `scripts/` get distributed)
+- Tooling (npm workspaces vs pnpm vs Turborepo)
+- Cutover approach (one PR or staged)
+- TypeScript path mapping and build orchestration
+- CI implications
+- Per-package verification criteria
+- Pre-mortem and C-suite review (per ADR-003's pattern)
+
+### What would change this decision
+
+This placeholder would be revised if:
+
+1. A trigger fires (in which case the ADR is upgraded, not revised).
+2. Constitution §2.1 itself is amended to drop or modify the monorepo requirement (would require a Section 9 amendment per CONSTITUTION.md).
+3. A new architectural decision (e.g., splitting AMP into multiple repos rather than one monorepo) changes the substrate this ADR would operate on.
+
+### References
+
+- Constitution §2.1 (monorepo structure — the source of this requirement)
+- ADR-003 (the cleanup plan that deferred this restructure and created this placeholder)
+- `docs/PROJECT_INVENTORY.md` item #5 (HIGH compliance issue: flat repo violates §2.1)

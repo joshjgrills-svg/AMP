@@ -315,6 +315,7 @@ These items arose from CEO review of the home-services Scout brief (`docs/scout/
 
 ### What's open for next session
 - **ADR-003 (Constitutional cleanup plan)** drafted and approved before any cleanup code is touched. Now scoped against the sharpened wedge.
+  - **Status (appended 2026-05-22):** ADR-003 drafted by Architect (commit `6e73039`); reviewed and **approved with modifications** in Session 006 (Phase 0 verification spike added; old Phase 6 moved to Phase 1.5; Vercel env-var unblock folded into Phase 1; old Phases 7/8 renumbered to 6/7). ADR-003 status is now **Approved (pending Phase 0 verification spike before any execution begins)**. ADR-006 (Monorepo Restructure) stub recorded as Proposed placeholder per CTO chair's request. See Session 006 entry below.
 - The Session 003/004 operational carryover (Vercel env vars HIGH PRIORITY, OPERATING_RHYTHM.md update).
 - Optional: a second competitive deep-dive on the Canadian-specific landscape if any (any local plumbing-vertical voice products, Solvea Canadian footprint, etc.) — flagged as nice-to-have, not a blocker for ADR-003.
 
@@ -340,3 +341,62 @@ ProScore is the warm channel, not the parent product. AMP sells to any Canadian 
 The surgical NORTH_STAR.md addendum is the first time the document has been amended without a v2 rewrite. The "Status updates since v1" section is a pattern that can be reused for future minor amendments — better than letting v1 prose drift silently or forcing a full v2 rewrite every time a wedge fact changes.
 
 The two trades named at the original Pending-follow-up stage (HVAC + plumbing) became three at the amendment stage (HVAC + plumbing + electrical) per CEO direction after the Avoca brief landed. The status line under the Pending follow-ups block records that drift honestly so future-Claude does not have to reconcile the apparent inconsistency.
+
+---
+
+## Session 006 — ADR-003 review, approval with modifications, ADR-006 stub
+**Date:** 2026-05-22
+**Duration:** ~30 minutes
+**Participants:** Main-thread Claude, CEO (Josh)
+
+### What happened
+- Reviewed the Architect-drafted ADR-003 (commit `6e73039`, end of Session 005).
+- CEO approved with four modifications:
+  - **Add Phase 0 (Verification Spike)** before Phase 1. 30-minute Builder-run spike covering (a) Sentry-on-Next-16 compatibility and (b) Retell dashboard URL change behavior in a scratch context. Must either lift overall plan confidence to 99% target or surface a concrete blocker that triggers an ADR-003 amendment before Phase 1 begins.
+  - **Move old Phase 6 (Decommission Claire-era surfaces) to new Phase 1.5**, between Phase 1 and Phase 2. Rationale added to the ADR: removing the Claire-era Vercel project before the Phase 4 destructive rename eliminates a possible source of interference and bounds Phase 4's cutover blast radius to a single Vercel project.
+  - **Add Vercel Preview/Development env-var unblock to Phase 1 scope** (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`). HIGH PRIORITY carryover from Session 003 (open since 2026-05-17). Unblocks PR checks for all subsequent phases.
+  - **Update overall plan confidence statement** to "Pre-spike: 95%. Post-spike: 99% target, contingent on no blocker discovery."
+- Phase renumbering reflected throughout ADR-003: old Phase 7 → new Phase 6 (Zod + adapter); old Phase 8 → new Phase 7 (Index rename + cleanup). All cross-references in the Decision phase list, Sequenced execution steps, COO C-suite paragraph, Confidence per-component list, and Implementation implications updated.
+- ADR-003 Status line updated from "Proposed (pending CEO approval before any execution)" to "Approved with modifications (pending Phase 0 verification spike before any execution begins)". Decided-by line updated to record the 2026-05-22 CEO approval.
+- **ADR-006 stub recorded:** "Monorepo Restructure (Deferred)." Status: Proposed placeholder. Trigger condition: earlier of first marketing site, first second customer surface, or first Build Phase milestone where a new package becomes load-bearing. Body: TBD when triggered. Satisfies the CTO chair's request from ADR-003's C-suite review for an explicit placeholder.
+- All changes shipped as a single docs-only commit direct to main per §7.5 (2 files: `DECISIONS.md`, `SESSION_LOG.md`).
+
+### What got decided
+- **ADR-003 (Constitutional Cleanup Execution Plan):** Approved with modifications. Status moved from Proposed to **Approved (pending Phase 0 verification spike before execution)**.
+- **ADR-006 (Monorepo Restructure):** stub recorded as Proposed placeholder with named trigger conditions.
+
+### What got deferred
+- **Phase 0 verification spike execution:** runs in the next session (anticipated Session 007 — the first execution session).
+- **`scripts/check-calls.ts`:** still untracked. Phase 1 will delete it as part of the now-approved plan.
+- **NORTH_STAR.md v2 rewrite:** still deferred from Sessions 005/006.
+- **OPERATING_RHYTHM.md update** (Session 004 carryover, the first-§7.5-exercise commitment): still pending.
+- **Reviewer audit on the trio diff (DECISIONS):** ADR-005 recommends Reviewer invocation for trio-touching docs commits. Deliberately skipped this session because (a) the modifications were CEO-specified verbatim, and (b) the Reviewer's natural gate is at code-PR time when the cleanup actually ships in Phases 1+. Documented here so the choice is visible to future-Claude rather than silent.
+
+### What got blocked
+- Nothing.
+
+### What's open for next session
+- **Phase 0 execution (Verification Spike):** 30-minute Builder spike on Sentry-on-Next-16 + Retell URL behavior. Pass → proceed to Phase 1. Blocker → ADR-003 amendment.
+- **Phase 1 execution (assuming Phase 0 passes):** Repo hygiene + Vercel env-var unblock. Builder PR. The first commit to substantively touch the cleanup.
+- Remaining operational carryovers: OPERATING_RHYTHM.md update.
+
+### What needs Josh
+- Approve Phase 0's findings when the spike completes (binary outcome: proceed or amend).
+- Review the Phase 1 PR when the Builder opens it.
+
+### Tripwires fired
+- **T-008 (preventive, functioned as designed)** — `DECISIONS.md` and `SESSION_LOG.md` staged by name for the commit; `scripts/check-calls.ts` correctly stayed untracked.
+
+### Constitution version at session start: v1.1
+### Constitution version at session end: v1.1 (no amendments this session)
+
+### Notes for future-Claude
+**ADR-003 is now Approved (pending Phase 0).** The Phase 0 spike is a gate that produces one of two outcomes: pass (proceed to Phase 1) or blocker (amend the ADR). There is no third outcome; do not let an ambiguous Phase 0 result drift into Phase 1 execution. If the Builder reports "mostly passes," treat it as a blocker — the binary is binary.
+
+**Phase 1.5 is genuinely 1.5, not 6.** The decimal phase number is awkward but accurate: it sequences between Phase 1 (repo hygiene) and Phase 2 (migrations baseline). It was Phase 6 in the original Architect draft and got moved up; renumbering all subsequent phases to absorb its slot would have created cross-reference churn for no clarity gain. Decimal phase is the lesser evil.
+
+**ADR-006 is a stub.** Its body is TBD by design. The trigger conditions are specific (marketing site / second app / new-package-load-bearing). Do not preemptively flesh out the body before a trigger fires — that re-introduces the same blast-radius problem ADR-003 deferred it to avoid.
+
+**The Vercel env-var fix being folded into Phase 1** closes a HIGH PRIORITY item that has been in Session 003's carryover since 2026-05-17. Worth checking: when Phase 1 runs, the Builder should verify the env-var addition works by watching the next PR check (Phase 2's PR is the natural validator). If the Vercel build still fails with `Missing required env var`, the dashboard work did not take effect and Phase 1 is not done.
+
+**Three Phase-0 outcomes worth thinking about in advance:** (1) clean pass on both checks — proceed normally. (2) Sentry-on-Next-16 blocker — fall back to `@sentry/node` per ADR-003's documented Option B; this is amendable in-session without ratification, since the fallback is already specified. (3) Retell URL behavior requires agent republish — this is a structural change to Phase 4 that splits the URL move from the schema rename, and DOES require an ADR-003 amendment with a new cutover sequence.
