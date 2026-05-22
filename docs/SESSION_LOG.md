@@ -528,3 +528,63 @@ Calls placed to `+12494448711` right now go to Twilio's demo greeting, not to an
 **Tripwires fired**
 - **T-006 (preventive, functioned as designed):** API keys read from `.env.local`, never echoed in any output or written artifact. The Twilio auth header was constructed in-memory and discarded.
 - **T-007 (preventive, functioned as designed):** Authorization for Twilio API access was implicit in step 2(d) of the resume instruction. No other env values were used incidentally.
+
+**Resolution actions taken (later same session, post-CEO direction 2026-05-23)**
+
+CEO established the operating principle going forward: **Claire is dead. AMP is a fresh build. We preserve from Claire only what saves real time; everything else is throwaway and we move on.** ADR-002's "kept — they are the active AMP plumber testbed" claim is no longer factually load-bearing; the Claire-era agent, LLM, and Twilio routing were already torn down between ADR-002 and this session.
+
+Concrete actions executed before Phase 1:
+1. **Retell agent renamed.** `agent_0e211c256211ef2ead23cc8375` renamed from "AMP Plumber - Default" to **"AMP - Plumbing - V1"** via PATCH `/update-agent/{id}`. Verified by independent GET. Agent ID unchanged, LLM unchanged (`llm_b440eb1b707430fc9aa4d8d0164d`, `claude-4.6-sonnet`), voice unchanged (`11labs-Adrian`), prompt unchanged. The existing prompt and config are preserved because they save real build time; the name "Default" was a stale artifact and "AMP - Plumbing - V1" makes lineage and intent legible.
+2. **`.env.local` corrected.** `AMP_PLUMBER_AGENT_ID` updated from the dead `agent_58fbaa9f9eb2e1f6698e54bedd` to the live `agent_0e211c256211ef2ead23cc8375`. `AMP_PLUMBER_LLM_ID` updated from the dead `llm_2387332d2303961cb4d67d815d9e` to the live `llm_b440eb1b707430fc9aa4d8d0164d`. File-local change; not committed (gitignored per §4.1).
+3. **`docs/PROJECT_INVENTORY.md` and `docs/DECISIONS.md` still reference the dead IDs.** Updates to those documents are deferred to the ADR-003 Phase 4 redraft (see next sub-entry) rather than patched piecemeal. Until that redraft lands, **this Session 007 entry is the authoritative source for the live agent identity**.
+
+### ADR-003 Phase 4 reframed as bring-up
+
+**Trigger:** the drift investigation above established that no live call path exists today.
+
+**Current ground truth (2026-05-22):**
+- Twilio `+12494448711` routes inbound calls to `https://demo.twilio.com/welcome/voice/` — Twilio's demo greeting. Not AMP. Not Retell.
+- The Retell agent (now "AMP - Plumbing - V1") is unpublished (`is_published: false`, `version: 0`), has no `webhook_url` set, and is not bound to any phone number in Retell's phone-number registry (Retell `/list-phone-numbers` returns count 0).
+- No webhook events are flowing anywhere. No customer calls are happening (no customers).
+
+**Phase 4 is no longer a cutover. It is a clean bring-up.** ADR-003 scoped Phase 4 as a 30-minute pinned-window cutover: PR merge + Supabase apply + Vercel deploy + Retell URL swap, with documented rollback in case the URL change failed mid-window. The propagation-risk anxiety (and pre-mortem item #3 that the Phase 0 spike resolved) all assumed a live agent serving traffic that needed to be swapped to a new URL atomically with the schema rename. None of those assumptions hold.
+
+The reframed Phase 4 sequence is:
+1. Set the agent's `webhook_url` directly to `/api/webhooks/retell/v1` on the live Vercel deployment. One PATCH call, immediate.
+2. Publish the agent (draft → published).
+3. Route Twilio `+12494448711` to Retell. Either import the number into Retell via `/import-phone-number` and bind it to the agent, or set the Twilio number's `voice_url` directly to Retell's Twilio-inbound endpoint. Architect picks the path.
+4. Smoke-test with a real inbound call. Verify webhook fires, `conversations` row appears, no Sentry errors, no Vercel 5xx.
+
+**What this simplifies:**
+- **No 30-minute pinned cutover window.** No live traffic to interrupt; bring-up runs whenever.
+- **No propagation-risk anxiety.** Phase 0 confirmed `webhook_url` updates are immediate (~205ms); combined with bring-up framing, there is no "what if the URL change doesn't propagate" failure mode.
+- **No URL-rollback procedure.** Bring-up rollback is trivially "delete the agent, leave Twilio on demo."
+- **Phase 4 collapses from "atomic deploy with rollback drill" to "four sequential bring-up steps, each independently verifiable."**
+
+**What still remains in Phase 4:** the schema rename migration; the route file move from `app/api/webhooks/retell/route.ts` to `app/api/webhooks/retell/v1/route.ts`; the Reviewer audit before merge.
+
+**Flag for the Architect's Phase 4 redraft (per CEO operating principle)**
+
+ADR-003 Phase 2 ("Migrations baseline") is scoped as *"capture live schema faithfully — reconcile drift between `supabase/schema.sql` and live Supabase before baseline lock-in."* The pre-mortem explicitly warns about `scripts/create-amp-agent.ts` referencing columns that exist in live Supabase but not in committed schema, and Phase 2 includes a `list_tables` introspection step to detect the diff.
+
+**Under "Claire is dead, AMP is fresh build," this framing should be reconsidered.** ADR-002 line 98 already established: *"the data currently in `amp_*` tables is throwaway. No customer is reading from these rows."* If the data is throwaway and the schema is about to be destructively renamed in Phase 4, there is no reason to faithfully baseline the current drifted schema. A simpler shape:
+
+- **Phase 2 becomes "write the schema we want."** Single migration that creates the final post-rename schema (no `amp_*` prefix, no `providers` FK, full RLS policies, naming compliance from the start). Applied to a clean Supabase environment (drop + recreate public schema, or fresh Supabase project).
+- **Phase 4 collapses Phase 2's old role.** The schema migration IS Phase 2. Phase 4 becomes purely the agent/Twilio bring-up plus the route file move.
+
+This is a material restructuring — ADR-003 may go from 7 phases to 5 or 6, and Phase 4's risk profile drops further. **The Architect should evaluate during the Phase 4 redraft session.** I am flagging, not deciding.
+
+**Constraints the Architect should respect during the redraft:**
+- The Vercel env-var unblock (currently in Phase 1) is independent of all this — it should stay in Phase 1.
+- Phase 0's verification spike PASS (Sentry-on-Next-16, Retell URL immediacy) remains valid; the redraft does not reopen those questions.
+- ADR-002's destructive-rename decision stands; "destructive" may now mean "drop and recreate" rather than "ALTER TABLE RENAME."
+
+**What needs Josh:** approval of the Architect's redraft when produced.
+
+---
+
+## Pending follow-ups (appended 2026-05-22, Session 007)
+
+1. **ADR-003 Phase 4 redraft — reframe from cutover to bring-up.** Architect to handle in a session after Phase 3 completes. Inputs: this Session 007 entry (drift investigation + reframe sub-entries); the operating principle "Claire is dead, AMP is fresh build"; the Phase 2 / Phase 4 collapse question flagged above; ADR-002 line 98 (data is throwaway). Output: revised ADR-003 phase plan recorded in DECISIONS.md as an ADR-003 amendment per Constitution Section 9.
+
+2. **Update `docs/PROJECT_INVENTORY.md` and `docs/DECISIONS.md` (ADR-002, ADR-003) to reflect live agent/LLM IDs.** Currently both reference the dead `agent_58fbaa9f9eb2e1f6698e54bedd` and `llm_2387332d2303961cb4d67d815d9e`. Fold into the ADR-003 Phase 4 redraft commit rather than patching standalone.
