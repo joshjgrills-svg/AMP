@@ -486,3 +486,45 @@ Invoked the Builder sub-agent to execute Phase 0 of ADR-003 — the verification
 **No production resource was touched during Phase 0.** Production plumber agent (`agent_58fbaa9f9eb2e1f6698e54bedd`) untouched. Production Vercel untouched. Production Supabase untouched. AMP repo unchanged (verified via `git status` post-Phase-0).
 
 **The transition from Phase 0 to Phase 1 is the inflection point** where the cleanup starts affecting the live AMP scaffold (Phase 1 creates `.env.example` and deletes `check-calls.ts` in the repo; Vercel env-var configuration touches the live Vercel project). Until Josh explicitly says "proceed to Phase 1," the cleanup is still in pre-execution state.
+
+### Retell agent ID drift — investigation
+**Triggered by:** Session 007 resume-from-rate-limit state report (2026-05-22). While confirming Phase 0 cleanup was clean, the `/list-agents` Retell call returned three agents, none of which was the canonical `AMP_PLUMBER_AGENT_ID=agent_58fbaa9f9eb2e1f6698e54bedd` referenced in `.env.local`, `docs/PROJECT_INVENTORY.md`, `docs/DECISIONS.md` (ADR-002 + ADR-003), and the Phase 0 entry above.
+
+**Investigation scope:** Read-only. No `.env.local` edit, no Retell agent change, no Twilio config change. Used existing `RETELL_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` from `.env.local`.
+
+**Findings**
+
+(a) **`agent_58fbaa9f9eb2e1f6698e54bedd` is gone.** Direct `GET /get-agent/{id}` returns HTTP 404 with body `{"status":"error","message":"Item agent_58fbaa9f9eb2e1f6698e54bedd not found from agent"}`. Retell's API exposes no historical/deleted-agent endpoint; from the API's perspective the ID simply does not exist in this account. The same holds for the LLM ID cited in DECISIONS (`llm_2387332d2303961cb4d67d815d9e`) — `/get-retell-llm/llm_2387332d2303961cb4d67d815d9e` also 404s. The Claire-era resources documented in ADR-002 ("kept — they are the active AMP plumber testbed") were deleted at some point after ADR-002 was recorded; no session log captured the deletion.
+
+(b) **The current live plumber is `agent_0e211c256211ef2ead23cc8375` ("AMP Plumber - Default").** It is the only agent on the account whose name and LLM prompt match the AMP plumber identity. Its LLM `llm_b440eb1b707430fc9aa4d8d0164d` (model: `claude-4.6-sonnet`) carries the prompt "You are a friendly and professional AI receptionist for {{business_name}}, a plumbing company in Ontario, Canada. Your primary goals are: 1. Answer questions about services professionally 2. Book app[ointments]…" The agent and its LLM share a `last_modification_timestamp` of `2026-05-01T01:42:26Z` (within ~100ms of each other) — the signature of a fresh agent creation on that date, not an update of an older one.
+
+(c) **`AMP Plumber - Default` has no `webhook_url` set, and is unpublished.** The full agent object returned by `/get-agent` does not include a `webhook_url` field at all (Retell omits unset fields). `is_published: false`, `version: 0`. The Phase 0 spike confirmed `webhook_url` is a writable, immediately-effective agent-level field — but it has never been set on this agent. So this agent is not currently delivering events to any AMP route.
+
+(d) **Twilio `+12494448711` is not pointed at Retell.** `GET /Accounts/{sid}/IncomingPhoneNumbers.json?PhoneNumber=%2B12494448711` returns one row with `voice_url=https://demo.twilio.com/welcome/voice/` (Twilio's stock demo welcome message). `voice_application_sid: null`. `date_created: 2026-04-08`, `date_updated: 2026-05-01T16:12:40Z` — the update is on the same day as the new agent's creation, suggesting the two events were part of one undocumented reset. Retell's `/list-phone-numbers` returns count 0 — Retell's own phone-number registration system is empty, so the number was never imported into Retell either.
+
+**Composite picture.** The "production plumber testbed" repeatedly referenced in the Constitution and ADRs is not currently a wired-up call path. Concretely:
+- `.env.local` `AMP_PLUMBER_AGENT_ID` points at a 404 agent.
+- The live plumber agent has no webhook URL and is unpublished.
+- The Twilio number is on Twilio's demo voice URL, not Retell.
+
+Calls placed to `+12494448711` right now go to Twilio's demo greeting, not to any Claire-era endpoint and not to AMP. There is no current customer traffic that this affects because there are no current customers — but ADR-003's mental model (especially Phase 4's "cutover from `/api/webhooks/retell` to `/api/webhooks/retell/v1` on the live plumber agent") is operating on a phantom assumption.
+
+**Implications for ADR-003**
+- **Phase 1** (repo hygiene + Vercel env vars): not blocked. Phase 1 does not touch Retell or Twilio. The Vercel env-var work copies `.env.local` values, including the stale `AMP_PLUMBER_AGENT_ID` — so Phase 1 should NOT copy that one variable until Josh decides whether to update `.env.local` first or leave it broken-but-documented.
+- **Phase 4** (Retell URL cutover) needs to be rewritten. There is no `/api/webhooks/retell` URL on a live agent to "cut over from." The actual Phase 4 work is now: (i) decide the canonical agent — either repoint `.env.local`/docs at `agent_0e211c256211ef2ead23cc8375`, or create a fresh agent the Builder owns; (ii) set its `webhook_url` to `/api/webhooks/retell/v1` directly (no "from" URL to migrate from); (iii) publish the agent; (iv) point Twilio `+12494448711`'s voice URL at Retell's Twilio-inbound URL for that agent. This is "build the testbed," not "cut over the testbed."
+- The Phase 0 outcome ("99% confidence") was correct in its own scope (Sentry compat + Retell URL behavior). The drift is a separate, previously-undetected gap that the Phase 0 spike happened to surface as a side effect of running `/list-agents` for cleanup verification.
+
+**What needs Josh**
+1. **Decide canonical agent:** is `agent_0e211c256211ef2ead23cc8375` ("AMP Plumber - Default", created 2026-05-01) the agent we want to standardize on, or should it be deleted and a fresh agent created with a deliberate name and version stamp?
+2. **Decide `.env.local` update timing:** before Phase 1 (so the Vercel env-var step copies the right ID), or as part of an amended Phase 4.
+3. **Decide ADR-003 amendment scope:** is Phase 4's rewrite an in-session amendment per ADR-003's "amendable in-session without ratification" clause, or does it need a fresh C-suite review given the larger scope shift (cutover → bring-up)?
+
+**What was NOT modified during this investigation**
+- `.env.local`: unchanged.
+- Any Retell agent or LLM: unchanged.
+- Twilio number config: unchanged.
+- AMP repo: only `docs/SESSION_LOG.md` (this entry).
+
+**Tripwires fired**
+- **T-006 (preventive, functioned as designed):** API keys read from `.env.local`, never echoed in any output or written artifact. The Twilio auth header was constructed in-memory and discarded.
+- **T-007 (preventive, functioned as designed):** Authorization for Twilio API access was implicit in step 2(d) of the resume instruction. No other env values were used incidentally.
