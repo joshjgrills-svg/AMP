@@ -126,3 +126,17 @@ If the answer is yes, we proceed. If the answer is no, we either revise the plan
 The North Star is not a marketing document. It is the operating system for strategic alignment between the founder, the agent team, and any future humans who join AMP. Its job is to outlive any individual conversation and any individual decision, so that when we are deep in execution and the path forks, we have something to navigate by.
 
 This is v1. v2 will exist when reality teaches us something this document got wrong.
+
+---
+
+## Status updates since v1
+
+Material refinements to v1 that have not yet triggered a v2 rewrite are recorded here so the document stays honest about current state. A v2 NORTH_STAR.md will fold these in when the document is next revised.
+
+**Geographic scope (added 2026-05-22, per ADR-004 Amendment).** V1 is Canada-only. The "Who AMP is for" section above describes the buyer in geography-neutral terms; for the wedge period, the buyer is specifically a Canadian (initially Ontario) owner-operator. United States opens as Phase 2 after the Canadian wedge proves.
+
+**Vertical wedge (recorded 2026-05-17, per ADR-004; narrowed 2026-05-22, per ADR-004 Amendment).** The "vertical wedge to be determined" placeholder on line 25 above is closed. Launch verticals are plumbing, electrical, HVAC. Fast-follow is roofing. ADR-004 and its 2026-05-22 amendment carry full reasoning.
+
+**Customer segment (narrowed 2026-05-22, per ADR-004 Amendment).** The "Owner-operators... $500K to $5M" range on line 23 above is narrowed for the wedge period to: sub-$2M primary, $2M–$5M secondary, $5M+ explicitly excluded. Reason: competitive analysis (`docs/scout/2026-05-22_avoca-competitive-deep-dive.md`) established Avoca AI owns the $5M+ trades segment and contests the $2M–$5M middle. AMP's defensible territory is sub-$2M.
+
+**Placeholder ADR numbering (open, not addressed in any session).** The "Future decisions" list on lines 113–118 above is stale — ADR-002 is the Supabase decision (not the wedge), ADR-004 is the wedge decision (not the company name), ADR-005 is the §7.5 carve-out (not funding strategy). This was flagged in ADR-002's "Note on ADR numbering" and is intentionally left unfixed pending the v2 rewrite.

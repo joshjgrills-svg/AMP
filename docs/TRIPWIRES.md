@@ -179,6 +179,13 @@ These tripwires have not bitten us yet but are predicted based on the architectu
 **Rationale:** AMP's wedge defensibility (ADR-004) rests on the structural gap between CSB's owner-initiated back-office posture and AMP's autonomous customer-facing voice-first posture. If Anthropic crosses the customer-facing real-time category boundary, North Star kill-criterion #4 must be re-evaluated within 90 days. The trigger is the category boundary, not feature volume — one customer-facing connector fires this tripwire, ten new back-office connectors do not.
 **Action when fired:** Escalate to Architect. Architect re-evaluates AMP's wedge defensibility against North Star kill-criterion #4 and produces an ADR within 14 days proposing either (a) re-affirm the wedge with new defensibility reasoning, (b) narrow the wedge, or (c) trigger the kill-criterion #4 90-day window per North Star.
 
+### T-206: Avoca ships downmarket self-serve product
+**Source:** ADR-004 Amendment (2026-05-22), AMP Ecosystem Scout Avoca deep-dive (`docs/scout/2026-05-22_avoca-competitive-deep-dive.md`)
+**Last reviewed:** 2026-05-22
+**Detection:** Avoca AI publishes a self-serve or "Lite" SKU meeting **both** of the following compound conditions: (a) published pricing under $500/month, AND (b) self-serve onboarding under 30 minutes (no demo required, no Implementation Manager assigned, no contract signature required to deploy). A single condition is a yellow flag for the next quarterly Avoca update; only the compound condition fires this tripwire.
+**Rationale:** ADR-004 Amendment establishes that AMP's defensible territory rests on Avoca's GTM economics being structurally incompatible with the sub-$2M owner-operator segment. If Avoca closes that GTM gap (self-serve + sub-$500/mo + <30 min onboarding), AMP's wedge closes within a quarter and North Star kill-criterion #4 is triggered. The trigger is the compound condition, not feature count — Avoca adding a tenth new integration does not fire T-206; Avoca publishing a Housecall Pro Self-Serve plan at $299/mo with one-click setup does.
+**Action when fired:** Escalate to Architect. Architect re-evaluates AMP's wedge defensibility against North Star kill-criterion #4 and produces an ADR within 14 days proposing (a) re-affirm the wedge with new defensibility reasoning, (b) narrow the wedge further, or (c) trigger the kill-criterion #4 90-day window per North Star.
+
 ---
 
 ## Audit schedule

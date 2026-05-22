@@ -303,3 +303,99 @@ Because this change touches both `docs/` and `.claude/`, it is itself NOT eligib
 - Constitution v1.1, Section 7.5 (the rule this ADR establishes)
 - Constitution Section 9 (the amendment procedure followed to land this change)
 - Prior friction examples: PR #2 (Session 001 tripwire additions), PR #3 (ADR-004 + SESSION_LOG)
+
+---
+
+## ADR-004 Amendment (2026-05-22): Wedge sharpening following Scout deep-dive on Avoca and CEO strategic input
+
+**Date:** 2026-05-22
+**Status:** Accepted; amends ADR-004 (does not supersede — ADR-004 remains in force as amended below)
+**Decided by:** CEO (Josh) with PM/Architect recommendation, informed by two AMP Ecosystem Scout briefs
+**Supersedes:** None (amends ADR-004)
+**Superseded by:** None
+
+### Context
+
+ADR-004 (2026-05-17) was decided primarily on competitive grounds against Claude for Small Business. Two follow-on Scout briefs over the past week surfaced material new information that the original decision did not have:
+
+1. The home-services customer-validation brief (`docs/scout/2026-05-18_home-services-market.md`) confirmed the wedge thesis (real pain, favorable math, open pricing window) but flagged that ADR-004 had evaluated the wrong competitor: **Avoca AI** — $1B valuation, $125M raised April 2026, ServiceTitan Gold Partner — was not assessed in ADR-004 and is the actual category-leading competitor in trades voice AI.
+
+2. The Avoca competitive deep-dive (`docs/scout/2026-05-22_avoca-competitive-deep-dive.md`) established that Avoca's 70+ integrations and enterprise sales motion make it dominant at the $10M+ tier but structurally exclude the sub-$5M owner-operator segment — and clarified that AMP's defensible territory is narrower than ADR-004 articulated.
+
+CEO direction following the two briefs is to sharpen the wedge along five axes — geography, verticals, segment, GTM, and competitive posture — before any further wedge execution. This amendment records those refinements. ADR-004's six original commitments remain in force; this amendment narrows and operationalizes them.
+
+### Amendments
+
+**1. Geographic scope.** V1 is Canada-only. United States opens as Phase 2 after the Canadian wedge proves. Rationale: ProScore's coverage is Ontario / Canada; AMP launches leveraging ProScore as a springboard; Canadian-first execution avoids splitting limited founder attention across two markets with different telecom regulation, different two-party consent rules, and different SMB software ecosystems.
+
+**2. First verticals (narrowed from ADR-004's five trades).** Launch verticals: **plumbing, electrical, HVAC.** Fast-follow: **roofing.** Deprioritized for the initial wedge: general contracting, kitchen remodeling, bathroom remodeling, pest control, tree service, drywall, landscaping. Rationale: these three trades have the highest published call-volume metrics and the most acute missed-call cost. Plumbing carries the highest call-booking rate in published trade data (43% per ServiceTitan); HVAC carries the strongest seasonal compounding (73% of revenue in 4 months); electrical has the highest customer phone-preference rate (67%). Roofing is structurally different (storm-bursty) and deferred to fast-follow once steady-demand trades are proven. General contracting is dropped from the initial naming per the home-services brief's "weakest of the five" finding.
+
+**3. Customer segment (narrowed from ADR-004's "$500K to $5M").** Primary target: **sub-$2M revenue, 1–5 truck owner-operator.** Secondary target: **$2M–$5M** (contested middle ground; serveable while Avoca remains upmarket). Explicitly excluded: **$5M+ operators, multi-location chains, PE-backed roll-ups** — these are Avoca's segment and AMP will not compete there. Rationale: the Avoca brief established that Avoca's $1K–$3K/month price point and sales-led GTM motion structurally exclude the sub-$2M tier. This is AMP's defensible structural opening, not a marketing positioning.
+
+**4. ProScore relationship.** AMP is a standalone product and standalone business. **ProScore is a launch springboard, not a parent product.** At launch, AMP leverages ProScore for: (a) marketing reach into ProScore's contractor base, (b) a natural early-customer cohort of ProScore-verified contractors, (c) a two-way value loop (AMP improves call handling, which generates better-handled jobs, which feed back into ProScore's trust signals). AMP sells to any Canadian contractor or professional service business, not only ProScore-verified contractors. **Honest timing note:** ProScore is not yet live as of 2026-05-22. Until ProScore launches, AMP cannot lean on the ProScore warm channel. Pre-ProScore-launch GTM is direct outreach to Ontario plumbing, electrical, and HVAC contractors plus word of mouth.
+
+**5. Positioning against Avoca.** AMP does not compete with Avoca head-to-head on features, integration breadth, or enterprise customer references — AMP will lose all three. When a buyer asks about Avoca, the answer is:
+
+> "Avoca is built for $10M+ trades operators with 20+ CSRs. AMP is built for the 1–5 truck owner-operator who wants the phone answered without a sales call."
+
+AMP differentiates on **segment economics, not product capability.**
+
+**6. Load-bearing commitments.** The following commitments are now strategic infrastructure, not stylistic preferences. Any future product decision that erodes any of them is a concession to Avoca and triggers re-review under this amendment:
+
+- 30-minute self-serve onboarding (no sales call required to deploy)
+- Transparent published pricing (no demos required to learn the price)
+- $200–$500/month entry tier; $800/month bundle ceiling for 2026
+- No procurement process required to start
+- Lead with Housecall Pro and Jobber integrations (not ServiceTitan — that is Avoca's stronghold)
+
+**7. Competitive monitoring posture: monitor, do not match.** The Scout monitors Avoca quarterly. Specific re-evaluation triggers:
+
+- Avoca publishes a "starting at $X" pricing page
+- Avoca launches a self-serve or "Lite" SKU
+- Avoca hires SMB AEs, SDRs, or PLG product roles
+- Avoca announces a partnership with a sub-$2M-focused tool or community
+
+Scout briefs go to the Architect, not directly to execution. **AMP's strategy is NOT "match whatever Avoca does."** AMP's strategy is to own the Canadian owner-operator wedge that Avoca structurally cannot serve profitably.
+
+**8. Kill criteria shift.** North Star kill-criterion #4 ("a horizontal platform makes AMP redundant") needs updating. The real near-term threat is not a horizontal platform — it is a **vertical-native competitor moving downmarket.** Specifically: if Avoca ships a self-serve SKU at <$500/month with <30-minute onboarding, AMP's defensible territory closes within a quarter and kill-criterion #4 is triggered. This scenario is added to TRIPWIRES.md as predictive tripwire **T-206** in the same change as this amendment. (NORTH_STAR.md kill-criterion #4 itself is not rewritten here; the amendment narrows its operational meaning, and a v2 NORTH_STAR.md will codify it when the document is next revised.)
+
+### Reasoning
+
+The two Scout briefs together produce one consolidated finding: **ADR-004's wedge is correct in shape but too generous in size.** Three sources of generosity:
+
+1. **Segment generosity.** ADR-004 named "$500K to $5M" inherited from NORTH_STAR.md. The Avoca brief showed Avoca contests the upper half of that range today and could contest the middle with one strategic decision. AMP's defensible territory is sub-$2M; planning the wedge around the wider range invites a competitive collision AMP cannot win.
+
+2. **Vertical generosity.** ADR-004 named five trades. The home-services brief established that the call-volume and missed-call-cost evidence is strong for HVAC and plumbing, decent for electrical, structurally different for roofing, and thin for general contracting. Five trades dilute focus without strengthening the wedge.
+
+3. **Positioning generosity.** ADR-004 left positioning against AI voice competitors undefined because the original brief did not surface Avoca. The Avoca brief made clear that AMP cannot compete on product breadth and must compete on segment economics. Codifying this prevents future product decisions from drifting toward feature parity (which AMP cannot afford and does not need).
+
+The amendment is conservative on what AMP keeps from ADR-004 (customer-facing channels, voice first, home services, no back-office for 12 months) and aggressive on what AMP narrows (geography, trade count, segment, GTM posture). The combined effect is a sharper wedge that is easier to execute against, easier to message, and harder for Avoca to attack from above.
+
+### Trade-offs accepted
+
+- **Canada-only V1 forgoes the larger US market for the wedge period.** Accepted: the founder-attention math does not support two markets, and ProScore's Ontario footprint is the warm channel.
+- **Dropping kitchen/bath remodel, pest, tree, drywall, landscaping from the initial naming forgoes positioning surface area.** Accepted: focused HVAC + plumbing + electrical is a stronger market position than a long list, and the deprioritized verticals can be added as expansion once the wedge proves.
+- **Excluding $5M+ operators forgoes the easier-to-close logo accounts.** Accepted: those accounts are Avoca's; chasing them is a losing posture and a distraction from the defensible segment.
+- **The "lead with Housecall Pro and Jobber, not ServiceTitan" commitment is counter to the conventional wisdom that ServiceTitan is the entry point to trades software.** Accepted: for AMP specifically, ServiceTitan is the segment Avoca owns. AMP's customers are mostly not on ServiceTitan; AMP's roadmap should reflect that.
+- **"Monitor, do not match" leaves AMP perpetually one feature behind Avoca's published product surface.** Accepted: feature parity with a $125M-funded competitor is not a winnable game; segment-economics differentiation is.
+
+### What would change this amendment
+
+We would revisit this amendment if:
+
+1. **T-206 fires** (Avoca ships self-serve SKU under $500/mo with under-30-min onboarding).
+2. **T-205 fires** (Anthropic ships a customer-facing real-time capability — original ADR-004 trigger, still active).
+3. The Canadian wedge proves and US expansion becomes the load-bearing decision.
+4. ProScore launches and the warm-channel assumption is validated or invalidated by early customer-acquisition data.
+5. A second competitive deep-dive surfaces a new credible threat the Avoca brief did not consider (e.g., a Housecall Pro or Jobber acquisition of an AI voice player, which would compress AMP's wedge faster than Avoca going downmarket).
+
+### References
+
+- `docs/scout/2026-05-18_home-services-market.md` — customer-validation brief
+- `docs/scout/2026-05-22_avoca-competitive-deep-dive.md` — Avoca competitive deep-dive (the load-bearing input ADR-004 was missing)
+- ADR-001 — Orchestration Model (the architectural foundation this amendment compounds)
+- ADR-002 — Supabase separation (the operational independence this amendment compounds)
+- ADR-004 — original wedge decision (amended, not superseded, by this entry)
+- ADR-005 — §7.5 documentation carve-out (the procedural mechanism that allowed this amendment to ship as docs-only)
+- TRIPWIRES.md — T-206 added in the same change as this amendment
+- NORTH_STAR.md — kill-criterion #4 operational meaning narrowed by this amendment; full v2 revision deferred

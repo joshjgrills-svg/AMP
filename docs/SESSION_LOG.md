@@ -280,3 +280,63 @@ These items arose from CEO review of the home-services Scout brief (`docs/scout/
 1. **STRATEGIC — Scout deep-dive on Avoca AI required before ADR-003.** Brief should cover: what Avoca actually does (technology, integrations, agent capabilities), pricing and customer segment, where they're strong, where they're vulnerable, how AMP differentiates structurally, signals on whether they're moving downmarket. This is the input ADR-004 was missing and must precede any further wedge work.
 
 2. **STRATEGIC — Amend ADR-004 to narrow the initial wedge from five trades to two (HVAC + plumbing), with electrical as fast-follow and roofing as Phase 2.** Drop general contracting from the initial naming. Amendment to be drafted after the Avoca brief lands.
+
+**Status (appended 2026-05-22):** Both items addressed in Session 005. Item 1 → `docs/scout/2026-05-22_avoca-competitive-deep-dive.md` (commit `2668673`). Item 2 → ADR-004 Amendment recorded in DECISIONS.md (Session 005 commit). The amendment ultimately retained electrical alongside HVAC and plumbing as a launch vertical (three trades, not two) per CEO direction after the Avoca brief landed.
+
+---
+
+## Session 005 — Avoca deep-dive + ADR-004 Amendment
+**Date:** 2026-05-22
+**Duration:** ~60 minutes
+**Participants:** Main-thread Claude, AMP Ecosystem Scout sub-agent, CEO (Josh)
+
+### What happened
+- `/session-start` opened the session. Status check confirmed clean main, no open PRs, no uncommitted code, `scripts/check-calls.ts` still untracked. Last work was the Scout-brief-CEO-read commit (`f077254`) from 2026-05-22 00:04 UTC.
+- **Pending follow-up #1 (Avoca deep-dive) actioned:** invoked the Scout sub-agent with a self-contained brief spec covering 8 sections. Scout produced a 267-line competitive deep-dive saved to `docs/scout/2026-05-22_avoca-competitive-deep-dive.md`, committed direct-to-main per §7.5 as `2668673`.
+- Material findings from the Avoca brief: (a) Avoca's 70+ integrations contradict the home-services brief's "ServiceTitan-locked" assumption — material correction; (b) Avoca's actual customer center of gravity is $10M+ trades operators, not $5M+ as previously assumed; (c) Avoca's sales-led GTM motion structurally excludes the sub-$2M segment, which is AMP's defensible territory; (d) AMP's differentiation is segment economics, not product capability.
+- **Pending follow-up #2 (ADR-004 amendment) actioned:** drafted "ADR-004 Amendment (2026-05-22): Wedge sharpening following Scout deep-dive on Avoca and CEO strategic input" per CEO direction. Eight numbered amendments covering geography (Canada V1), verticals (plumbing + electrical + HVAC; roofing fast-follow; GC + six others deprioritized), segment (sub-$2M primary, $2M–$5M secondary, $5M+ excluded), ProScore relationship (springboard, not parent), Avoca positioning (segment economics, not features), load-bearing commitments (self-serve, transparent pricing, $200–$500/mo entry, $800/mo bundle ceiling, Housecall Pro + Jobber lead), competitive monitoring (monitor, do not match), and kill criteria (T-206 added).
+- **T-206 added to `docs/TRIPWIRES.md`** as predictive tripwire: fires on the compound condition of Avoca publishing <$500/mo self-serve pricing AND <30-minute self-serve onboarding.
+- **Surgical "Status updates since v1" addendum added to `docs/NORTH_STAR.md`** recording geographic scope, vertical narrowing, segment narrowing, and the long-standing stale-placeholder-ADR-numbering gap. v2 rewrite deferred.
+- The full session shipped as a single docs-only commit direct to main per §7.5 (4 files: `DECISIONS.md`, `TRIPWIRES.md`, `NORTH_STAR.md`, `SESSION_LOG.md`).
+
+### What got decided
+- **ADR-004 Amendment (2026-05-22):** see DECISIONS.md. Amends ADR-004; does not supersede. Eight wedge-sharpening commitments covering geography, verticals, segment, GTM, positioning, load-bearing commitments, competitive posture, and kill criteria.
+
+### What got deferred
+- **ADR-003 (Constitutional cleanup plan):** still the load-bearing next deliverable. The amendment sharpens the wedge so ADR-003 has a clearer customer-segment target to scope toward (Canadian sub-$2M plumbing/electrical/HVAC owner-operator).
+- **`scripts/check-calls.ts`:** still untracked; fate still deferred to ADR-003.
+- **`docs/OPERATING_RHYTHM.md` update:** still pending from Session 004 (the first §7.5 exercise post-ratification).
+- **Vercel Preview/Development env vars:** still HIGH PRIORITY from Session 003 carryover; not addressed this session.
+- **NORTH_STAR.md v2 rewrite:** the surgical "Status updates since v1" addendum is a stopgap. A full v2 that folds in ADR-002, ADR-004, the amendment, and the load-bearing-commitments framing is deferred to whenever the document is next revised.
+- **Reviewer audit on the load-bearing trio diff (NORTH_STAR + DECISIONS):** ADR-005 recommends Reviewer invocation for trio-touching docs commits. Deliberately skipped this session because content was specified verbatim by CEO direction; the Reviewer would have nothing to assess beyond fidelity to that spec. Documented here so the choice is visible to future-Claude rather than silent.
+
+### What got blocked
+- Nothing.
+
+### What's open for next session
+- **ADR-003 (Constitutional cleanup plan)** drafted and approved before any cleanup code is touched. Now scoped against the sharpened wedge.
+- The Session 003/004 operational carryover (Vercel env vars HIGH PRIORITY, OPERATING_RHYTHM.md update).
+- Optional: a second competitive deep-dive on the Canadian-specific landscape if any (any local plumbing-vertical voice products, Solvea Canadian footprint, etc.) — flagged as nice-to-have, not a blocker for ADR-003.
+
+### What needs Josh
+- Nothing immediate. The amendment was drafted at Josh's direct instruction; no further approval required for the amendment itself.
+- At the start of next session: approve ADR-003 before any cleanup code is touched.
+
+### Tripwires fired
+- **T-008 (preventive, functioned as designed)** — four docs files were staged by name for the amendment commit (`docs/DECISIONS.md`, `docs/TRIPWIRES.md`, `docs/NORTH_STAR.md`, `docs/SESSION_LOG.md`). `scripts/check-calls.ts` correctly stayed untracked.
+
+### Constitution version at session start: v1.1
+### Constitution version at session end: v1.1 (no amendments this session)
+
+### Notes for future-Claude
+The ADR-004 Amendment **does not supersede ADR-004**. Both are in force; the amendment narrows the operational meaning of ADR-004's six original commitments. When reading DECISIONS.md, read ADR-004 first, then the amendment.
+
+T-206 fires on a **compound condition** (self-serve pricing <$500/mo AND self-serve onboarding <30 min). A single condition is a yellow flag for the quarterly Avoca review; only both together fire the tripwire and trigger an Architect re-evaluation within 14 days.
+
+The Canada-V1 scope is **geographic only**. The product is the same; only the go-to-market is constrained. When ADR-003 (cleanup plan) is drafted, no Canadian-specific schema or telephony changes are required by this amendment — the constraint is on which customers are sold to, not what is shipped.
+
+ProScore is the warm channel, not the parent product. AMP sells to any Canadian contractor or professional service business. The "AMP is not ProScore's child" North Star commitment is preserved by this framing.
+
+The surgical NORTH_STAR.md addendum is the first time the document has been amended without a v2 rewrite. The "Status updates since v1" section is a pattern that can be reused for future minor amendments — better than letting v1 prose drift silently or forcing a full v2 rewrite every time a wedge fact changes.
+
+The two trades named at the original Pending-follow-up stage (HVAC + plumbing) became three at the amendment stage (HVAC + plumbing + electrical) per CEO direction after the Avoca brief landed. The status line under the Pending follow-ups block records that drift honestly so future-Claude does not have to reconcile the apparent inconsistency.
