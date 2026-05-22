@@ -400,3 +400,89 @@ The two trades named at the original Pending-follow-up stage (HVAC + plumbing) b
 **The Vercel env-var fix being folded into Phase 1** closes a HIGH PRIORITY item that has been in Session 003's carryover since 2026-05-17. Worth checking: when Phase 1 runs, the Builder should verify the env-var addition works by watching the next PR check (Phase 2's PR is the natural validator). If the Vercel build still fails with `Missing required env var`, the dashboard work did not take effect and Phase 1 is not done.
 
 **Three Phase-0 outcomes worth thinking about in advance:** (1) clean pass on both checks — proceed normally. (2) Sentry-on-Next-16 blocker — fall back to `@sentry/node` per ADR-003's documented Option B; this is amendable in-session without ratification, since the fallback is already specified. (3) Retell URL behavior requires agent republish — this is a structural change to Phase 4 that splits the URL move from the schema rename, and DOES require an ADR-003 amendment with a new cutover sequence.
+
+---
+
+## Session 007 — Phase 0 Verification Spike (ADR-003)
+**Date:** 2026-05-22
+**Duration:** ~10 minutes (Builder execution + main-thread scribing)
+**Participants:** Main-thread Claude, Builder sub-agent, CEO (Josh)
+
+### What happened
+
+Invoked the Builder sub-agent to execute Phase 0 of ADR-003 — the verification spike that gates all subsequent cleanup execution. Both checks PASS with clean results; no ADR-003 amendment required; Phase 1 may begin.
+
+**Phase 0 Verification Spike — Outcome (verbatim from Builder)**
+
+**Check 1: Sentry on Next.js 16.2.4**
+- Next.js version in `package.json`: `16.2.4`
+- Latest `@sentry/nextjs` version: `10.53.1`
+- Declared Next.js peer range: `^13.2.0 || ^14.0 || ^15.0.0-rc.0 || ^16.0.0-0`
+- **Verdict: PASS**
+- Evidence: The peer dependency range for `@sentry/nextjs@10.53.1` explicitly includes `^16.0.0-0`, which covers Next.js 16.2.4. No scratch install was needed — the declared peer range directly asserts compatibility. The range uses a pre-release flag (`-0`) consistent with Sentry tracking Next.js major versions ahead of GA. No workaround or fallback is required; Phase 3 can proceed with a standard `npm i @sentry/nextjs` install.
+
+**Check 2: Retell webhook URL change behavior**
+- Scratch agent ID (now deleted): `agent_0b28049f42e133f68a918f04ce`
+- Scratch LLM ID (now deleted): `llm_4296f5b645090b9e3b1612c65040`
+- Sequence:
+  - T0 (`2026-05-22T02:23:03.119Z`): agent created with `webhook_url=https://example.com/test-1`
+  - Immediate GET after create: returned `test-1` — correct
+  - T1 (`2026-05-22T02:23:03.541Z`): update sent to `webhook_url=https://example.com/test-2`
+  - Next GET (T1 + 205ms): returned `test-2`
+  - No further polling required.
+  - Cleanup: scratch agent deleted, scratch LLM deleted.
+- **Verdict: PASS**
+- Evidence: The webhook URL update propagated immediately — the very next GET after the PATCH call (205ms later, dominated by network round-trip) returned the new value. No republish was required. The Retell API treats `webhook_url` as an immediately-effective field on the agent's draft, not a published-version field. The production cutover in Phase 4 (changing the plumber testbed's URL from `/api/webhooks/retell` to `/api/webhooks/retell/v1`) is a single field edit that takes effect within one second of saving — confirming pre-mortem item #3 is resolved.
+
+**Updated overall plan confidence**
+- Pre-spike: 95% (per ADR-003)
+- Post-spike: **99%** — both uncertainties (Sentry-on-Next-16, Retell URL propagation) resolved with clean PASS outcomes. No blockers discovered. Phase 3 confidence lifts from 85% to 99%; Phase 4 confidence lifts from 90% to 99%.
+
+**Recommendation:** PROCEED TO PHASE 1. No ADR-003 amendment required.
+
+**Cleanup verification (Builder-confirmed)**
+- `/tmp/sentry-scratch/`: never created (not needed — peer range check was sufficient per plan step 3).
+- `/tmp/phase0-retell-check.ts`: removed.
+- Scratch Retell agent: deleted via `client.agent.delete` in the script's `finally` block.
+- Scratch Retell LLM: deleted via `client.llm.delete` in the script's `finally` block.
+- AMP repo: unchanged. `git status` shows only `scripts/check-calls.ts` untracked (pre-existing state from Session 001).
+
+### What got decided
+- **Phase 0 PASS on both checks.** ADR-003 confirmed at 99% post-spike confidence. No amendment required. ADR-003 status remains "Approved (Phase 0 complete; Phase 1+ executable)."
+
+### What got deferred
+- **Phase 1 execution:** ready to begin pending CEO go-ahead in this session, or in Session 008.
+- **`scripts/check-calls.ts`:** still untracked. Phase 1 will delete it.
+- All prior carryovers: OPERATING_RHYTHM.md update (Session 004), NORTH_STAR.md v2 rewrite (deferred from Sessions 005/006).
+
+### What got blocked
+- Nothing.
+
+### What's open for next session
+- **Phase 1 execution** (Repo hygiene + Vercel env-var unblock): Builder PR. First commit to substantively touch the cleanup. Includes (a) `.env.example` creation, (b) `scripts/check-calls.ts` deletion, (c) `.gitignore` audit, (d) Vercel Preview/Development env-var configuration (HIGH PRIORITY carryover from Session 003).
+- **Phase 1.5** (Decommission Claire-era surfaces): Vercel dashboard + Retell/Twilio audit + SESSION_LOG note direct to main. Can land in the same session as Phase 1 or follow immediately.
+
+### What needs Josh
+- **Decide whether to proceed to Phase 1 in this same session or pause.** Phase 1 is a PR (not docs-only) and includes manual Vercel dashboard work; warrants explicit go-ahead.
+- Review the Phase 1 PR when opened.
+
+### Tripwires fired
+- **T-006 (preventive, functioned as designed):** Builder read `RETELL_API_KEY` from `.env.local` but did not echo the value in any output, log, or written file. The credential never reached the conversation transcript or any tracked artifact.
+- **T-007 (preventive, functioned as designed):** Builder's read of `.env.local` was authorized by the Phase 0 task specifically; only `RETELL_API_KEY` was used. No incidental exposure of other env values.
+- **T-008 (preventive, functioned as designed):** Main thread will stage `docs/SESSION_LOG.md` by name; `scripts/check-calls.ts` correctly stays untracked.
+
+### Constitution version at session start: v1.1
+### Constitution version at session end: v1.1 (no amendments this session)
+
+### Notes for future-Claude
+**Both Phase 0 checks passed cleanly with empirical evidence, not inference.** The Architect's pre-mortem items #3 (Retell URL behavior) and #5 (Sentry-on-Next-16) — the two named uncertainties that pulled overall plan confidence to 95% pre-spike — are now resolved. The plan now stands at 99% post-spike confidence without using either documented fallback (no `@sentry/node` fallback needed; no Phase 4 split needed).
+
+**Sentry-on-Next-16: the peer range explicitly covers Next 16** via `^16.0.0-0`. Phase 3's `npm i @sentry/nextjs` will install the latest version (10.53.1 at time of check) cleanly. The pre-release flag (`-0`) in Sentry's peer range is conservative wording — Sentry tracks Next majors ahead of Next GA. Builder did NOT install Sentry into the AMP repo (per the brief's hard constraint); Phase 3 is the first time `@sentry/nextjs` lands in `package.json`.
+
+**Retell URL changes are immediate.** The observed propagation was 205ms — that is dominated by network round-trip from the Codespace to `api.retellai.com`, not by any Retell-side processing delay. The Retell API treats `webhook_url` as a writable field on the agent's draft; no publish/republish call is required. Phase 4 cutover step (c) is therefore a single-second operation, not a propagation event that needs monitoring.
+
+**Builder created and deleted two scratch Retell resources** (`agent_0b28049f42e133f68a918f04ce`, `llm_4296f5b645090b9e3b1612c65040`). Both deletions were verified by the script. If they appear later in any Retell dashboard view as soft-deleted/visible artifacts, they were Phase 0 spike scratch and can be hard-deleted without consequence.
+
+**No production resource was touched during Phase 0.** Production plumber agent (`agent_58fbaa9f9eb2e1f6698e54bedd`) untouched. Production Vercel untouched. Production Supabase untouched. AMP repo unchanged (verified via `git status` post-Phase-0).
+
+**The transition from Phase 0 to Phase 1 is the inflection point** where the cleanup starts affecting the live AMP scaffold (Phase 1 creates `.env.example` and deletes `check-calls.ts` in the repo; Vercel env-var configuration touches the live Vercel project). Until Josh explicitly says "proceed to Phase 1," the cleanup is still in pre-execution state.
