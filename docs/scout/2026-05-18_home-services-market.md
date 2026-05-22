@@ -235,3 +235,7 @@ The honest caveat: **landscaping** showed up several times in Anthropic's Claude
 - [Statista — Number of Plumbing & HVAC Contractor SMBs by Firm Size U.S. 2020](https://www.statista.com/statistics/1122362/number-plumbing-hvac-contractor-smbs-firm-size-us/)
 - [BLS — Plumbing, Heating, and Air-Conditioning Contractors OEWS](https://www.bls.gov/oes/2023/may/naics5_238220.htm)
 - [NAICS / Census — Plumbing, Heating, and Air-Conditioning Contractors](https://www.census.gov/naics/?input=2382&year=2022&details=2382)
+
+---
+
+CEO READ 2026-05-17 evening: Brief acknowledged. Avoca AI is the load-bearing new finding — ADR-004 evaluated the wrong competitor. HVAC+plumbing narrowing accepted in principle. No decisions made tonight; sleeping on it.

@@ -270,3 +270,13 @@ The "Numbering note" inside ADR-005 says "ADR-004 is currently in flight in PR #
 ### Process note (appended 2026-05-18)
 
 PROCESS NOTE: The §7.5 docs-only carve-out was first exercised (commit `8dbf768`, Vercel follow-up logging) while PR #4 — the PR that introduces §7.5 — was still open. The rule was used a few minutes before it was formally merged to main. No harm: PR #4 merged shortly after and the rule is now ratified. Recorded for honesty of the history. Lesson: a rule should be merged before it is relied upon; next time, merge first, then use.
+
+---
+
+## Pending follow-ups (appended 2026-05-21, post Scout brief review)
+
+These items arose from CEO review of the home-services Scout brief (`docs/scout/2026-05-18_home-services-market.md`) on the evening of 2026-05-17. They are strategic carryover for the next session and must be addressed before further wedge execution.
+
+1. **STRATEGIC — Scout deep-dive on Avoca AI required before ADR-003.** Brief should cover: what Avoca actually does (technology, integrations, agent capabilities), pricing and customer segment, where they're strong, where they're vulnerable, how AMP differentiates structurally, signals on whether they're moving downmarket. This is the input ADR-004 was missing and must precede any further wedge work.
+
+2. **STRATEGIC — Amend ADR-004 to narrow the initial wedge from five trades to two (HVAC + plumbing), with electrical as fast-follow and roofing as Phase 2.** Drop general contracting from the initial naming. Amendment to be drafted after the Avoca brief lands.
