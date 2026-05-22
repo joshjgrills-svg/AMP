@@ -399,3 +399,446 @@ We would revisit this amendment if:
 - ADR-005 — §7.5 documentation carve-out (the procedural mechanism that allowed this amendment to ship as docs-only)
 - TRIPWIRES.md — T-206 added in the same change as this amendment
 - NORTH_STAR.md — kill-criterion #4 operational meaning narrowed by this amendment; full v2 revision deferred
+
+---
+
+## ADR-003 — Constitutional Cleanup Execution Plan
+
+**Date:** 2026-05-22
+**Status:** Proposed (pending CEO approval before any execution)
+**Decided by:** PM/Architect recommendation; awaiting CEO (Josh) approval
+**Supersedes:** None
+**Superseded by:** None
+
+### Context
+
+`docs/PROJECT_INVENTORY.md` (2026-05-13) catalogued 27 Constitutional compliance issues in the inherited Claire-era scaffold. ADR-002 (2026-05-13) ratified the destructive-rename approach: AMP owns its own Supabase project, the `amp_` prefix is dropped, the `providers` FK is removed, and `claire-ai-beta.vercel.app` is decommissioned. Four sessions of carryover have queued the execution plan as the load-bearing next deliverable. This ADR is that plan.
+
+The four BLOCKING violations that gate the Build Phase:
+
+1. Every locked-term table name violates Constitution §1.3 (`amp_organizations`, `amp_agents`, `amp_calls`, `amp_templates`, `amp_appointments`, `amp_alerts`, `amp_weekly_reports`).
+2. RLS is enabled on every table with **zero policies defined** (§1.1, §4.3, §4.5). The webhook works only because it uses the service-role client.
+3. No `.env.example` (§4.1), no `supabase/migrations/` directory (§1.2), no tests (§5.1), no Sentry (§6.2), no structured logger (§6.1).
+4. Repo is flat, not the §2.1-mandated monorepo.
+
+Three deferred items also belong in this plan: `scripts/check-calls.ts` (untracked since Session 001), `claire-ai-beta.vercel.app` decommissioning (ADR-002 commitment never executed), and the Retell webhook move to `/api/webhooks/retell/v1/` (Session 001 Q7 decision never executed).
+
+The wedge has sharpened since ADR-002 (Canadian sub-$2M plumbing/electrical/HVAC owner-operators per ADR-004 + 2026-05-22 amendment). The cleanup must be Constitutional and unblock the Build Phase for this sharpened wedge — it does not have to support every theoretical future product.
+
+### Decision
+
+Execute the cleanup in **eight sequenced phases**, each a discrete commit (or PR) with explicit verification. Monorepo restructure is **deferred to a separate ADR (ADR-006 placeholder)**, not included in this plan — reasoning below.
+
+The phases:
+
+1. **Repo hygiene** (docs-only; direct to main per §7.5) — `.env.example`, `scripts/check-calls.ts` decision, `.gitignore` audit.
+2. **Migrations baseline** (PR) — capture the live Supabase schema as `0000_baseline.sql` with proper header per §1.2; no functional change.
+3. **Pre-flight infrastructure** (PR) — Vitest + first webhook test, structured logger, Sentry install, env-var validation at boundary. Lands before the destructive rename so the rename has a safety net.
+4. **Cutover migration** (PR + Supabase apply + Vercel deploy + Retell dashboard change, executed in a bounded window) — schema rename + enum rename + FK drop + RLS policies + webhook URL versioning, all in one atomic deploy.
+5. **Scripts reconciliation** (PR) — update or delete the ten one-off scripts that reference `amp_*` names; resolve the `create-amp-agent.ts` schema drift; remove Claire-era hardcoded values.
+6. **Decommission Claire-era surfaces** (Vercel dashboard work; SESSION_LOG entry direct to main) — verify and remove `claire-ai-beta.vercel.app`; reconcile Retell/Twilio resource inventory.
+7. **`jsonb` Zod schemas + adapter pattern Phase 1** (PR) — Zod schemas for the seven `jsonb` columns; wrap Retell client first (it is on the live call path).
+8. **Index rename + enum rename + secondary cleanup** (PR) — non-load-bearing naming compliance items grouped because they share a migration shape.
+
+Monorepo restructure is **out of scope** for this ADR and tracked as ADR-006 (proposed). The restructure has the highest blast radius of any item in the inventory and gains nothing for the wedge (one app, no marketing site yet, no second customer surface). Doing it now compounds the cutover risk for zero customer value. Doing it before the marketing site or a second app is built is the right inflection point.
+
+### Alternatives considered
+
+**Option B: One giant atomic PR covering all 27 inventory items.** Rejected. Cutover risk is bounded by phase size; an eight-step plan with eight verifications produces eight chances to detect a regression and eight clean rollback points. A single PR produces one regression surface and one rollback that throws away all the good work along with the bad.
+
+**Option C: Defer RLS policies to a later phase ("the webhook is service-role, we don't need them yet").** Rejected. Constitution §1.1 mandates RLS on every table from the migration that creates them, and §4.5 explicitly forbids merging tables without policies. The renamed tables ARE new tables from the migration's perspective. Skipping policies would create a window where any future code path using the anon client reads nothing — silently — exactly the failure mode §4.5 was written to prevent. Policies and the rename land together.
+
+**Option D: Include the monorepo restructure as the final phase.** Rejected for this ADR. See reasoning in §6 below.
+
+**Option E: Copy-and-migrate instead of destructive rename.** Already rejected by ADR-002. Not re-litigated.
+
+**Option F: Move the webhook URL change to a separate cutover from the schema rename.** Rejected. Both require Retell dashboard work and a brief data-flow interruption. Two cutovers is two windows of risk; one cutover is one. Per ADR-002 trade-off note, "land the webhook URL change and the table rename in the same deploy."
+
+### Sequenced execution steps
+
+Each phase is one commit/PR (where applicable) with explicit verification. Where-it-happens annotation is **bold** at the start of each phase.
+
+---
+
+**Phase 1 — Repo hygiene** (docs/config only; direct to main per §7.5 IF the changes are docs-only; otherwise PR)
+
+*Where:* **Codespace.**
+*Estimated time:* 30 minutes.
+
+Steps:
+1. Create `.env.example` at repo root listing every variable currently in `.env.local` with a one-line comment per variable explaining what it is and where to obtain it. Use placeholder values; never copy real secrets (T-006, T-007).
+2. Make the `scripts/check-calls.ts` decision (see "scripts/check-calls.ts decision" section below). If **delete**, `git rm scripts/check-calls.ts`. If **archive**, move to `scripts/archive/check-calls.ts` and add `scripts/archive/` to the README's "deprecated" list.
+3. Verify `.gitignore` covers `.env*` (already confirmed; line 28).
+4. Audit `.gitignore` once more for any new gaps surfaced since Session 002 (e.g., `.next/`, `coverage/`, `*.tsbuildinfo` — all already present).
+
+*Verification:*
+- `git status` shows `.env.example` tracked, `.env.local` untracked.
+- `scripts/check-calls.ts` is no longer untracked (either deleted or moved to `scripts/archive/`).
+- `cat .env.example` shows every variable; no real secrets are present.
+
+*Commit boundary:* one commit. Because `.env.example` is at repo root (not under `docs/`), this phase is NOT docs-only and requires a PR per §7.5.
+
+---
+
+**Phase 2 — Migrations baseline** (PR)
+
+*Where:* **Codespace** for file creation; **Supabase dashboard** for verification that baseline matches live schema before applying anything to the live project.
+*Estimated time:* 2 hours including Supabase introspection.
+
+Steps:
+1. Create `supabase/migrations/` directory.
+2. Use the Supabase MCP `list_tables` against the live project (`yxuhjxxbgbuznpoekwpj`) to confirm the live schema matches `supabase/schema.sql`. Reconcile any drift surfaced by `scripts/create-amp-agent.ts` (it references `amp_templates.type`, `amp_organizations.type`, `amp_agents.retell_llm_id` which may exist in live but not in committed schema, per Inventory item #15).
+3. Create `supabase/migrations/20260522000000_baseline.sql` containing the **reconciled** current schema (post-drift-resolution). Header comment per §1.2 must include: date (2026-05-22), author, reason ("Capture current schema as numbered baseline; no functional change."), rollback procedure ("This is a baseline capture. Rollback is `drop schema public cascade; create schema public;` followed by re-applying the prior `supabase/schema.sql`. Destructive — only for a fresh environment.").
+4. Delete `supabase/schema.sql` (now superseded by the migration).
+5. Add `db:migrate` script to `package.json` invoking the Supabase MCP or CLI workflow Josh prefers.
+
+*Verification:*
+- `supabase/migrations/20260522000000_baseline.sql` exists with proper header.
+- Applying the baseline to a clean Supabase project produces a schema identical to the live project (test via Supabase MCP `apply_migration` to a scratch branch if available, or via dry-run + diff).
+- `supabase/schema.sql` is deleted.
+- The Reviewer audit confirms no functional change to the live schema.
+
+*Commit boundary:* one PR. No live-schema change — this is a structural capture only.
+
+*Critical:* This phase MUST complete and merge before Phase 4 can run. Phase 4 depends on having a numbered migrations chain.
+
+---
+
+**Phase 3 — Pre-flight infrastructure** (PR)
+
+*Where:* **Codespace.**
+*Estimated time:* 4-6 hours.
+
+Steps:
+1. Install Vitest: `npm i -D vitest @vitest/coverage-v8`. Add `test` and `test:watch` scripts to `package.json`.
+2. Write the first test: `app/api/webhooks/retell/route.test.ts` — covers signature verification (happy path, bad signature), and the upsert path with a mocked `supabaseAdmin`. This is the minimum to satisfy §5.1 ("every webhook handler" must be tested).
+3. Install Sentry: `npm i @sentry/nextjs`. Run `npx @sentry/wizard@latest -i nextjs` or wire manually. Configure DSN per environment.
+4. Add structured logger module at `lib/log.ts` (kept flat for now since monorepo restructure is deferred). Use `pino` (small, fast, no deps that matter): `npm i pino`. Export a singleton with `info`, `warn`, `error` methods that emit JSON.
+5. Replace every `console.*` call in `app/api/webhooks/retell/route.ts` (lines 168, 173, 185, 252, 260 per inventory) with the structured logger. **Do not log raw Supabase error objects** — extract `message` and `code` only (PII guard per §6.1).
+6. Add a Zod schema for environment variables at `lib/env.ts`, parsed once at module load. Throws on missing required vars.
+
+*Verification:*
+- `npm test` runs and passes Vitest with the webhook test.
+- `npm run build` succeeds with Sentry wired.
+- A deliberate uncaught error in a local route reaches Sentry's dashboard (or a Sentry test event does).
+- The webhook route no longer contains `console.*` calls.
+- Starting the app with a missing env var throws a clear error at boot, not a silent runtime failure.
+
+*Commit boundary:* one PR. Reviewer must approve before Phase 4.
+
+*Note on confidence:* Sentry wiring on Next.js 16 + React 19 is the part with the most uncertainty here — the Sentry wizard's Next.js support has historically lagged Next.js majors. Per `AGENTS.md`, the Builder reads `node_modules/next/dist/docs/` before wiring. Flagged for execution.
+
+---
+
+**Phase 4 — Cutover migration** (PR + bounded execution window)
+
+*Where:* **Codespace** for the migration file + code rename; **Supabase dashboard/MCP** to apply migration; **Vercel** for redeploy; **Retell dashboard** for webhook URL update.
+*Estimated time:* PR review separate; execution window is 30 minutes (see "Cutover window" section below).
+
+Steps (PR contents, all in one commit on the PR branch):
+
+1. Create `supabase/migrations/20260522000100_rename_amp_tables_and_add_rls.sql`. The migration:
+   - Drops the `amp_organizations.proscore_provider_id` FK and column (ADR-002 commitment).
+   - Renames tables: `amp_organizations` → `customers`, `amp_agents` → `agents`, `amp_calls` → `conversations`, `amp_templates` → `agent_templates`, `amp_appointments` → `appointments`, `amp_alerts` → `alerts`, `amp_weekly_reports` → `weekly_reports`.
+   - Renames every enum per §1.1 (`amp_organization_status` → `customer_status_type`, `amp_agent_status` → `agent_status_type`, `amp_call_direction` → `conversation_direction_type`, `amp_call_status` → `conversation_status_type`, `amp_call_outcome` → `conversation_outcome_type`, `amp_sentiment` → `conversation_sentiment_type`, `amp_appointment_status` → `appointment_status_type`, `amp_alert_type` → `alert_type_type` [or `alert_kind_type` — see open question below], `amp_alert_severity` → `alert_severity_type`, `amp_organization_tier` → `customer_tier_type`).
+   - Adds default-deny + explicit-allow RLS policies per table. Policy shape: `customer_id`-scoped allow for `authenticated` role; service-role bypass implicit. Policies cover SELECT, INSERT, UPDATE, DELETE explicitly per §4.5.
+   - Header comment per §1.2 including rollback procedure: "Rename tables back to `amp_*`, restore `proscore_provider_id` column + FK, drop all policies." Note: rollback is theoretically possible but should not be required because cutover window data is throwaway.
+
+2. Update all 17 `amp_*` references in code:
+   - `app/api/webhooks/retell/route.ts`: lines 162 (`amp_agents` → `agents`), 179, 248, 257 (`amp_calls` → `conversations`). Move the route file from `app/api/webhooks/retell/route.ts` to `app/api/webhooks/retell/v1/route.ts` (Session 001 Q7, ADR-002 commitment).
+   - `lib/supabase.ts`: no table refs, no change.
+   - `scripts/*.ts`: update or defer to Phase 5. Recommend update inline in this PR for the scripts that will survive (most updates are mechanical `amp_X` → `X` find-replace).
+3. Update `package.json` if any script names reference `amp_*`.
+
+*Cutover execution sequence (run in this order during the bounded window):*
+
+a. Merge the PR to main. Vercel auto-deploys the new code (which references the renamed tables — it will 500 against the un-migrated live DB until step b).
+b. Apply the migration to the live Supabase project via MCP `apply_migration`.
+c. Update the Retell dashboard webhook URL from `https://amp-beta-one.vercel.app/api/webhooks/retell` to `https://amp-beta-one.vercel.app/api/webhooks/retell/v1`. (**Manual Retell dashboard work** — single field change.)
+d. Place a test call to the AMP plumber agent (`agent_58fbaa9f9eb2e1f6698e54bedd`, Twilio `+12494448711`). Verify the webhook fires, a row appears in `conversations`, no errors in Sentry, no 4xx/5xx in Vercel logs.
+
+*Verification:*
+- All seven renamed tables exist with new names; `amp_*` tables do not exist.
+- `proscore_provider_id` column and FK do not exist.
+- Every renamed table has at least one SELECT, INSERT, UPDATE, DELETE policy defined (`select policyname from pg_policies` returns ≥4 rows per table).
+- Test call lands a row in `conversations`, not `amp_calls`.
+- Webhook URL change in Retell dashboard takes effect (verify by webhook receipt logged in Sentry within 5 seconds of test-call hangup).
+- No 500s in Vercel logs in the 10 minutes following cutover.
+
+*Commit boundary:* one PR for the code+migration; manual dashboard steps documented in the PR description as a checklist Josh runs at merge time.
+
+---
+
+**Phase 5 — Scripts reconciliation** (PR)
+
+*Where:* **Codespace.**
+*Estimated time:* 3-4 hours.
+
+Steps:
+1. For each script under `scripts/`, decide: keep (and update to new names) / delete / move to `scripts/archive/`. Default decision per script:
+   - `create-amp-agent.ts` → **keep**, update to new names, rename to `create-agent.ts`, resolve schema drift surfaced by Inventory item #15.
+   - `check-schema.ts`, `probe-schema.ts`, `check-template.ts` → **keep**, update table names. These are introspection helpers useful during Build Phase.
+   - `audit-retell.ts`, `audit-retell-numbers.ts`, `audit-trunk.ts` → **keep**, remove hardcoded Claire-era `trunkSid` (move to env var or delete the script).
+   - `bind-phone.ts`, `register-phone.ts`, `attach-number-to-trunk.ts` → **archive** to `scripts/archive/`. These are one-shot setup tooling, already run.
+2. Remove `terminationUri = 'claireai.pstn.twilio.com'` hardcoding from `register-phone.ts` if archived this is moot; otherwise move to env var.
+3. Include `scripts/` in typecheck by removing the `"scripts/**"` exclude from `tsconfig.json` (Inventory item #20). Fix any newly-surfaced type errors.
+
+*Verification:*
+- `npx tsc --noEmit` passes including scripts.
+- No script references any `amp_*` name.
+- No Claire-era hardcoded values remain in tracked scripts.
+
+*Commit boundary:* one PR. Lower risk because no live system touched.
+
+---
+
+**Phase 6 — Decommission Claire-era surfaces** (Vercel dashboard + SESSION_LOG)
+
+*Where:* **Vercel dashboard** (manual), **Codespace** for the SESSION_LOG note.
+*Estimated time:* 30 minutes.
+
+Steps:
+1. In the Vercel dashboard, verify `claire-ai-beta.vercel.app` status. If it serves traffic, take it offline (or delete the project entirely if Josh confirms it is no longer needed for any purpose). Record the action.
+2. Audit Retell dashboard for any other webhook URLs pointing at `claire-ai-beta.vercel.app` (paranoid check — should be none).
+3. Audit Twilio dashboard for the phone number `+12494448711` configuration — confirm it routes to Retell agent `agent_58fbaa9f9eb2e1f6698e54bedd`, not to a Claire-era endpoint.
+4. Append a SESSION_LOG entry recording the decommission with timestamp and what was done.
+
+*Verification:*
+- `curl -I https://claire-ai-beta.vercel.app/` returns 404 or DNS NXDOMAIN.
+- No Retell webhook points at the Claire URL.
+- Twilio number routing confirmed correct.
+
+*Commit boundary:* docs-only SESSION_LOG append, direct to main per §7.5.
+
+---
+
+**Phase 7 — Zod schemas for `jsonb` columns + Retell adapter** (PR)
+
+*Where:* **Codespace.**
+*Estimated time:* 1 day.
+
+Steps:
+1. Install Zod if not present: `npm i zod`.
+2. Create `lib/schemas/` (kept flat pending monorepo) with one file per `jsonb` column:
+   - `agent-templates-faqs.ts`, `agents-business-hours.ts`, `agents-booking-config.ts`, `conversations-transcript.ts`, `conversations-metadata.ts`, `alerts-context.ts`, `weekly-reports-metrics.ts`.
+3. Validate at the application boundary: every write into a `jsonb` column passes through `Schema.parse()`; every read out of one passes through `Schema.safeParse()` with a logged warning on failure.
+4. Wrap the Retell SDK in an adapter at `lib/integrations/retell/index.ts`. Adapter exposes typed `createAgent`, `getCall`, `registerPhoneNumber` with retry (max 2), 10-second timeout, Sentry instrumentation per §3.2. Multi-provider design hook: adapter takes an interface, current implementation is Retell-only, but the interface allows a second provider to be added later.
+5. Update the webhook route and `lib/retell.ts` callers to use the adapter.
+
+*Verification:*
+- `npm test` includes a Zod-validation test for at least the `conversations.transcript` schema.
+- The webhook route does not import `retell-sdk` directly.
+- A simulated Retell timeout produces a typed error reaching Sentry, not an uncaught exception.
+
+*Commit boundary:* one PR.
+
+---
+
+**Phase 8 — Index rename + remaining cleanup** (PR)
+
+*Where:* **Codespace** + **Supabase MCP** for the index rename migration.
+*Estimated time:* 2-3 hours.
+
+Steps:
+1. Create `supabase/migrations/20260522010000_rename_indexes.sql` renaming every index from `{table}_{column}_idx` to `idx_{table}_{column}` per §1.1. 26 indexes per inventory.
+2. Update `app/layout.tsx` metadata title from `"Create Next App"` to `"AMP"` (cosmetic; Inventory item #22).
+3. Replace `app/page.tsx` with a minimal holding page (Inventory item #23). One sentence: "AMP — coming soon." Defer marketing copy to a separate session.
+4. Add `engines` field to `package.json` pinning Node version (Inventory item #25). Node 20 is the Vercel default; pin to `>=20.0.0 <23.0.0`.
+5. Fix `app/globals.css` `font-family` override that defeats the Geist wiring (Inventory item #24). One-line CSS fix.
+
+*Verification:*
+- `select indexname from pg_indexes where schemaname = 'public'` shows all indexes use the `idx_` prefix.
+- `https://amp-beta-one.vercel.app/` no longer serves the create-next-app placeholder.
+- `npm install` succeeds on a Node 20 environment.
+
+*Commit boundary:* one PR. Lowest risk in the plan.
+
+---
+
+### Cutover window
+
+**Planned window:** Sunday, 2026-05-31, 09:00–09:30 ET (06:00–06:30 PT).
+
+**Why this window:**
+- Sunday morning is the lowest-traffic time for inbound calls to home-services contractors. The plumber testbed is the only live agent today; even so, a Sunday-morning miss is the minimum-cost miss.
+- 30-minute bound is generous for a 4-step cutover. Steps are: (a) merge PR (~2 min auto-deploy), (b) apply migration (~10 sec), (c) update Retell URL (~1 min manual click), (d) test call (~2 min). Buffer is for unforeseen issues.
+- If the window blows past 30 minutes, rollback procedure is documented in the migration header: restore prior tables, restore Retell URL to `/api/webhooks/retell` (no `/v1`), revert the PR. The 30-minute bound is a forcing function; if rollback is needed it happens at minute 30, not minute 60.
+
+**Pre-window checklist Josh runs:**
+1. Confirm no active inbound traffic in Retell dashboard's call log for the prior 2 hours.
+2. Confirm Vercel deployments queue is empty.
+3. Confirm Supabase status page is green.
+4. Have the rollback procedure file open in another window.
+
+**During-window communication:** Josh runs the cutover; the SESSION_LOG entry for the cutover session records start time, end time, and any deviations from the checklist. If anything material happens (rollback needed, errors observed, dashboard work surfaces an unknown), a postmortem follows per §6.3 regardless of whether the cutover ultimately succeeded.
+
+### `scripts/check-calls.ts` decision
+
+**Decision: Delete.**
+
+**Reasoning:**
+1. The script is 36 lines of one-off introspection. It queries the most recent 5 rows from `amp_calls` and prints them. It is not load-bearing.
+2. Rewriting it for `conversations` is trivial (one-line change) but adds a tracked artifact that has been used zero times in the four months since it was written.
+3. Archiving in `scripts/archive/` is dead weight for an item that has never been re-run.
+4. If the same introspection is needed in the Build Phase, recreating it takes 5 minutes — and by then the right tool is a Supabase MCP query, not a tracked TS script.
+5. Most importantly: this script is the canonical example of "untracked work" T-008 was created to catch. Deleting it closes the loop on the original Session 001 finding rather than re-litigating it. Every future session has been carrying it as open work for zero benefit.
+
+Execution: `git rm scripts/check-calls.ts` happens in Phase 1.
+
+### Pre-mortem
+
+The five most likely failure modes:
+
+**1. The migrations baseline does not faithfully capture the live schema.**
+The inventory flagged that `scripts/create-amp-agent.ts` references columns (`amp_templates.type`, `amp_organizations.type`, `amp_agents.retell_llm_id`) that may exist in the live Supabase project but not in committed `schema.sql`. If Phase 2 captures only what is in `schema.sql`, the baseline does not match reality, and Phase 4's rename migration will fail on tables/columns it does not expect — or worse, silently succeed while leaving stranded columns the application then references and the typecheck does not catch (because the renamed table no longer has the column the script expects).
+
+*How detected:* Phase 2 includes a Supabase MCP `list_tables` introspection step that compares live to committed. The diff IS the detection.
+*How recovered:* Reconcile within Phase 2 by adding the drift to the baseline migration. Do not move to Phase 4 until the diff is zero.
+*Mitigation in plan:* Phase 2 explicitly calls for reconciliation before baseline lock-in. Verification criterion includes "Applying the baseline to a clean Supabase project produces a schema identical to the live project."
+
+**2. RLS policies are written but lock out the service-role webhook.**
+The webhook today works because `supabaseAdmin` uses the service role, which bypasses RLS by default. But the wrong policy shape (e.g., an `authenticated`-only INSERT policy without a service-role bypass) could break the webhook silently — the call lands, the upsert fails, Sentry catches it, but the row is lost.
+
+*How detected:* The test call in Phase 4 step (d) is the detection. A failed upsert produces no row in `conversations` and a Sentry error within seconds.
+*How recovered:* Revert the migration (rollback procedure documented in header), revisit policies, re-cut. The 30-minute window makes this a 5-minute reversal.
+*Mitigation in plan:* Phase 3's webhook test runs against a mocked `supabaseAdmin` and will exercise the upsert code path; the policy interaction is only testable in the live DB. Add an explicit "service-role can do everything" policy as a belt-and-suspenders measure on the renamed tables — service role bypasses RLS regardless, but the explicit policy makes the intent visible and protects against a future Supabase change to default behavior.
+
+**3. The Retell dashboard URL change does not take effect, or takes effect late.**
+Retell's webhook URL is a single field but it is unknown (per Inventory and not verified for this ADR) whether Retell caches the URL, requires republishing the agent, or whether a propagation delay exists between dashboard save and live routing.
+
+*How detected:* Phase 4 step (d) test call. If the call lands but no webhook arrives, the URL did not propagate. If the call lands AND a webhook arrives at the old URL (which still exists on the deployed app since file moves do not auto-redirect), the URL was never updated.
+*How recovered:* If propagation is the issue, wait 5 minutes and re-test. If propagation requires agent republish, do that in the dashboard. If old-URL webhooks are arriving, keep the old route file in place temporarily with a structured-log warning so we capture the data while we debug the dashboard.
+*Mitigation in plan:* This is the highest-uncertainty item in the cutover. **Flagged for verification during execution: the Builder should test the URL change against a staging or scratch Retell agent first if one is available before doing it on the production plumber testbed.** Confidence on Retell behavior here is 80%, not 99%. If the URL change is more involved than a one-field edit, Phase 4 may need to split the URL move from the schema rename.
+
+**4. The cutover succeeds but a script in `scripts/` references `amp_*` and breaks the next time it is run.**
+There are 13+ references to `amp_*` table names across `scripts/`. Phase 4 moves the live database; Phase 5 cleans up the scripts. Between merge of Phase 4 and merge of Phase 5, any script run against the live DB will throw "relation does not exist."
+
+*How detected:* The script fails immediately on run.
+*How recovered:* Phase 5 fixes it. Until then, do not run any `scripts/*.ts` between Phase 4 and Phase 5 merge.
+*Mitigation in plan:* Phase 4's PR description includes "Do not run any operational scripts until Phase 5 merges." Phase 5 should be opened as a draft PR before Phase 4 merges so the gap is minimized to hours, not days.
+
+**5. Sentry wiring on Next.js 16 + React 19 produces build failures or runtime breakage.**
+Per `AGENTS.md`, Next.js 16 has breaking changes from training-data conventions. The Sentry Next.js SDK has historically lagged Next.js majors. If `@sentry/nextjs` is incompatible with Next 16, Phase 3 stalls and the entire plan blocks behind it (because Phases 4+ depend on Sentry being installed for the observability gate per §6.2).
+
+*How detected:* `npm run build` fails after Sentry install.
+*How recovered:* Three options, in order: (a) check the Sentry changelog for a Next.js 16 compatible version (`npm view @sentry/nextjs versions`); (b) if unavailable, vendor Sentry's Node SDK (`@sentry/node`) and wire it manually without the Next.js plugin — gives error capture without the full Next.js integration; (c) defer Sentry to a post-cutover phase, but require Phase 3 to land structured logging at minimum.
+*Mitigation in plan:* Per `AGENTS.md`, the Builder reads `node_modules/next/dist/docs/` before writing code. The Builder should verify Sentry compatibility BEFORE starting Phase 3 — that is a 5-minute version check. If incompatible, Phase 3 is restructured per option (b) above. Confidence on Sentry install: 85%.
+
+### C-suite review
+
+**CTO.** The plan's biggest risk is Phase 4's cutover. Two operations (schema rename + webhook URL change) in one window is a hard pattern to test in isolation. I want the Phase 3 pre-flight to include a test that exercises the webhook against a renamed-table fixture, not just the current-shape fixture, so the new code path is exercised before live cutover. The eight-phase sequencing is correct; the alternative (one giant PR) would be a worse risk than this plan accepts. I disagree with deferring the monorepo — short-term I agree, but I want it as ADR-006 proposed with a "no later than first marketing site or second customer surface" trigger so it does not get lost. **Resolution:** Phase 3 test fixture updated to exercise renamed-table shape; ADR-006 placeholder added to the open questions; CTO concerns addressed.
+
+**CSO.** RLS policies and the rename landing together is non-negotiable and the plan respects this. I want explicit policy review in the Phase 4 PR: every table needs SELECT, INSERT, UPDATE, DELETE policies named, scoped to `customer_id` (the new table), with a documented service-role bypass. I also want the webhook route to NOT log raw Supabase error objects (the current code does this; §6.1 forbids it) — Phase 3 covers this but I am flagging it as a hard requirement, not nice-to-have. On Sentry: ensure no PII reaches it; the `beforeSend` filter must strip `caller_phone`, `caller_name`, `caller_email` per §4.3. **Resolution:** Phase 3 step 5 already covers PII guard in logging; Sentry `beforeSend` PII filter added as explicit verification in Phase 3.
+
+**CFO.** I am chasing two costs. First, Sentry has a free tier (5K events/month); at AMP's current zero-traffic state we are well under. Confirm we are on the free tier and that the plan does not add a paid dependency — §8 requires my explicit sign-off for paid external deps and I have not given it. Second, the cutover window is bounded but if it slips and an inbound call is missed during the window, we burn customer trust we have not yet built. The trade-off is acceptable because the plumber testbed is an internal test agent today, not a paying customer — but the moment AMP has a paying Canadian plumber, this kind of cutover requires a different model (zero-downtime, blue-green, or scheduled per customer). Flag for the Build Phase. **Resolution:** Sentry free-tier confirmed as part of Phase 3 verification. Cutover model flagged in "What Josh will hit next" — future cutovers under paying-customer load require a different pattern.
+
+**COO.** The manual surface in this plan is the part I worry about most. Four phases require dashboard work (Phase 4 Retell, Phase 4 Supabase apply via MCP, Phase 6 Vercel, Phase 6 Retell/Twilio audit). Each dashboard action is a place where the operating loop breaks — Josh does it once, no audit trail, no rollback automation. I want each manual dashboard step to be a single line in the PR description with a checkbox; Josh checks it as he goes; the SESSION_LOG entry for the cutover session preserves the record. I also want the Phase 4 cutover scheduled in advance (Sunday 09:00 ET is fine) and not slipped — slipping the window erodes the "bounded" property of the cutover. **Resolution:** Phase 4 PR description template includes a dashboard-step checklist; SESSION_LOG entry for the cutover session is mandatory; cutover window pinned to Sunday 2026-05-31 09:00-09:30 ET in this ADR.
+
+**Real disagreement and resolution:** CTO wants the monorepo handled as a separate ADR (ADR-006); CSO is silent on the monorepo. CFO worries about the cutover-window risk for future paying customers; COO worries about the current cutover's manual surface. These are not in direct conflict — both COO and CFO want bounded, recorded cutover discipline; the difference is whether the discipline scales (CFO's concern). **Both resolved by** (a) recording the manual surface in PR checklists for THIS cutover, (b) flagging that future paying-customer cutovers require a different model (zero-downtime, scheduled per customer) as a Build Phase decision. CTO and the implicit "do not defer monorepo too long" position is resolved by promising an ADR-006 placeholder.
+
+### Confidence levels (per Constitution §7.4)
+
+This is a **Foundational decision (99% bar)** because it touches schema and security model — both explicitly named in §7.4 as Foundational.
+
+Per-component confidence:
+
+- **Phase 1 (repo hygiene): 99%.** Trivial, well-understood, low blast radius.
+- **Phase 2 (migrations baseline): 95%.** Depends on faithful introspection of live schema. The drift between committed `schema.sql` and live DB is the unknown. Confidence rises to 99% after Phase 2 step 2 (the introspection step) completes.
+- **Phase 3 (pre-flight infrastructure): 85%.** Sentry-on-Next-16 is the open uncertainty. Vitest + structured logger + env Zod are 99%. Sentry alone is 80%. Mitigation strategies (option b: manual `@sentry/node` wire) bring overall phase confidence to 85% with a known fallback.
+- **Phase 4 (cutover): 90%.** Schema migration mechanics are well-understood (95%+). The Retell webhook URL behavior is the open uncertainty (80% on first attempt; rises to 99% after Builder verifies dashboard behavior in a scratch context). RLS policy shape is 95% (standard pattern). Overall: 90% pre-execution, with explicit Builder verification gate before live cutover that raises it to 99% before the window opens.
+- **Phase 5 (scripts reconciliation): 99%.** Pure code change, no live system touched.
+- **Phase 6 (decommission): 95%.** Dashboard work; "claire-ai-beta.vercel.app current state unknown" carries 5% uncertainty until verified.
+- **Phase 7 (Zod + adapter): 95%.** Well-understood pattern; first adapter pattern in the repo means some shape decisions get made and may need iteration.
+- **Phase 8 (index rename + cleanup): 99%.** Mechanical.
+
+**Overall plan confidence: 95%** — below the 99% Foundational bar because of Phase 3 (Sentry) and Phase 4 (Retell URL behavior). The two named uncertainties are explicit and flagged for Builder verification during execution. The plan does not pretend to 99% certainty it does not have. If Josh wants 99% before approval, the path is to have the Builder run a 30-minute verification spike on (a) Sentry-on-Next-16 compatibility and (b) Retell dashboard URL change behavior, and report back before this ADR is ratified.
+
+### Trade-offs accepted
+
+- **Eight phases means eight PRs and eight verifications across multiple sessions.** Faster than one mega-PR if anything breaks; slower if everything works. Accepted because the risk-bounded model produces eight rollback points and forces verification at each gate.
+- **Monorepo restructure deferred.** Inventory item #5 (HIGH) is not addressed in this ADR. ADR-006 placeholder. Accepted because the wedge does not need it and including it doubles the blast radius of this cleanup for zero customer value.
+- **Cutover window has a 30-minute customer-impact bound during which the plumber testbed is unreachable.** Acceptable because no paying customer exists yet. Not acceptable for future cutovers post-customer-acquisition; flagged for the Build Phase.
+- **The plan accepts that the live Supabase project has drift from committed `schema.sql` and that drift is reconciled inside the baseline migration, not separately documented.** Accepted because the only audit trail anyone needs is "the renamed schema works"; pre-rename drift becomes irrelevant once Phase 4 ships.
+- **Sentry-on-Next-16 carries the highest uncertainty in the plan and is not resolved before ADR approval.** Accepted because resolving it requires the Builder to run code; the architect cannot resolve it from inspection. Falling back to `@sentry/node` is a known-good escape valve.
+
+### What would change this decision
+
+This ADR would be revised before execution if:
+
+1. The Phase 2 introspection step reveals the live Supabase schema drift is materially larger than the inventory anticipated (e.g., entire tables not in committed schema, or columns the application currently writes to that are not captured anywhere).
+2. The Builder's pre-Phase-3 verification of Sentry-on-Next-16 surfaces a fundamental incompatibility that requires more than the documented fallback (e.g., `@sentry/node` itself broken on Node 20 + Next 16).
+3. The Builder's pre-Phase-4 verification of Retell dashboard URL behavior surfaces that the change requires Retell agent republish (which has its own downtime implications and may require splitting Phase 4 into two windows).
+4. Josh changes the cutover window or wants the plumber testbed paused entirely during cleanup (which would simplify Phase 4 by removing the "test call must succeed" gate).
+5. A new ADR (e.g., a decision to launch with multiple environments — staging + prod — before the wedge ships) changes the substrate this cleanup runs against.
+
+This ADR would be re-evaluated post-execution if any phase's verification fails in a way the plan did not anticipate. The post-failure response is a postmortem per §6.3 and a revised plan as ADR-003.1 or ADR-007 (whichever is more honest about what changed).
+
+### Implementation implications
+
+**Files created:**
+- `.env.example` (Phase 1)
+- `supabase/migrations/20260522000000_baseline.sql` (Phase 2)
+- `supabase/migrations/20260522000100_rename_amp_tables_and_add_rls.sql` (Phase 4)
+- `supabase/migrations/20260522010000_rename_indexes.sql` (Phase 8)
+- `app/api/webhooks/retell/v1/route.ts` (Phase 4, replaces old location)
+- `app/api/webhooks/retell/route.test.ts` or `app/api/webhooks/retell/v1/route.test.ts` (Phase 3)
+- `lib/log.ts` (Phase 3)
+- `lib/env.ts` (Phase 3)
+- `lib/schemas/{seven-jsonb-schemas}.ts` (Phase 7)
+- `lib/integrations/retell/index.ts` (Phase 7)
+- `scripts/archive/{bind-phone,register-phone,attach-number-to-trunk}.ts` (Phase 5; existing files moved)
+- Sentry config files generated by Sentry wizard (Phase 3; exact list depends on wizard output)
+
+**Files modified:**
+- `app/api/webhooks/retell/route.ts` → moved + table refs updated + console.* removed (Phase 3 + Phase 4)
+- `scripts/{check-schema,probe-schema,check-template,create-amp-agent,audit-*}.ts` → table refs updated, Claire-era values removed (Phase 5)
+- `package.json` → test scripts, db:migrate, engines field, new deps (Phases 3, 5, 7, 8)
+- `tsconfig.json` → remove `"scripts/**"` exclude (Phase 5)
+- `app/layout.tsx` → title metadata (Phase 8)
+- `app/page.tsx` → holding page (Phase 8)
+- `app/globals.css` → remove font-family override (Phase 8)
+- `.gitignore` → no expected changes (Phase 1 verification only)
+
+**Files deleted:**
+- `supabase/schema.sql` (Phase 2; superseded by migrations)
+- `scripts/check-calls.ts` (Phase 1)
+
+**Live system changes (where executed):**
+- **Supabase project `yxuhjxxbgbuznpoekwpj` (Phase 4 + Phase 8 via MCP `apply_migration`):** schema rename, FK drop, RLS policies, index rename.
+- **Vercel project (Phase 4 auto-deploy on PR merge; Phase 6 manual for Claire decommission):** new code deploy, env var addition for Sentry DSN (Phase 3), `claire-ai-beta` project deletion (Phase 6).
+- **Retell dashboard (Phase 4 manual):** webhook URL update.
+- **Twilio dashboard (Phase 6 audit only):** routing verification, no changes expected.
+
+**State document updates:**
+- `docs/DECISIONS.md` — this ADR appended on approval; potentially ADR-006 placeholder for monorepo deferral if Josh wants it tracked explicitly.
+- `docs/TRIPWIRES.md` — likely a new tripwire after Phase 4 cutover (e.g., "destructive cutover under paying-customer load requires a different model"); add post-cutover, not now.
+- `docs/SESSION_LOG.md` — one entry per phase-execution session (anticipated 3-5 sessions across the eight phases depending on session length).
+- `docs/PROJECT_INVENTORY.md` — re-generated by Architect after Phase 8 lands; not edited by hand per §7.3.
+
+### References
+
+- Constitution §1.1 (schema conventions, RLS mandate)
+- Constitution §1.2 (migration discipline)
+- Constitution §1.3 (locked terms taxonomy)
+- Constitution §2.1 (monorepo structure; deferred to ADR-006)
+- Constitution §2.2 (TypeScript discipline; relevant for Phase 3 env Zod + Phase 7 Zod schemas)
+- Constitution §3.2 (adapter pattern; Phase 7)
+- Constitution §3.3 (webhook handling; Phase 4 URL versioning)
+- Constitution §4.1 (secrets in env; Phase 1)
+- Constitution §4.3 (PII, RLS, recordings; Phase 4 + Phase 3 logging guard)
+- Constitution §4.5 (RLS policies in same migration as table; Phase 4 gating rule)
+- Constitution §5.1 (webhook handler tests required; Phase 3)
+- Constitution §6.1 (structured logging, no PII; Phase 3)
+- Constitution §6.2 (Sentry; Phase 3)
+- Constitution §6.3 (postmortems; required if any phase fails)
+- Constitution §7.4 (tiered confidence; Foundational 99% bar)
+- Constitution §7.5 (docs-only carve-out; relevant for SESSION_LOG entries during execution)
+- Constitution §8 (negative space; CFO sign-off required for paid deps — Sentry is free-tier)
+- ADR-001 — Orchestration model (the architectural commitment this cleanup unblocks)
+- ADR-002 — AMP-Supabase separation + destructive rename ratification (the decision this ADR executes)
+- ADR-004 — Wedge decision (the customer segment this cleanup unblocks the build for)
+- ADR-004 Amendment (2026-05-22) — Canadian sub-$2M plumbing/electrical/HVAC sharpening
+- ADR-005 — §7.5 docs-only carve-out (relevant for SESSION_LOG and Phase 6 commits)
+- `docs/PROJECT_INVENTORY.md` (2026-05-13) — the source of the 27 compliance issues
+- `docs/scout/2026-05-18_home-services-market.md` — customer-validation context for wedge scope
+- `docs/scout/2026-05-22_avoca-competitive-deep-dive.md` — competitive context informing why cleanup speed matters
