@@ -642,22 +642,21 @@ Executed ADR-003 Phase 1.5 — decommission Claire-era resources before Phase 4 
 ### What got decided
 
 - **ADR-002's Retell and Twilio decommission commitments are now executed.** A "Status (appended 2026-05-23, Session 009)" note is added under ADR-002 in DECISIONS.md noting the partial execution; Vercel portion remains pending.
-- **The Vercel CLI auth gap** is real but bounded — CEO will run dashboard check next session or authenticate the CLI via `! vercel login`. Either path completes the ADR-002 commitment.
+- **The Vercel CLI auth gap was moot in retrospect.** CEO ran the dashboard check on 2026-05-23 (post-deletions, same date) and confirmed `claire-ai-beta` was already deleted on the Vercel side at an unrecorded date prior to this audit. The Vercel side of ADR-002 was therefore already closed before Phase 1.5 began; this session's deletions handled only the still-live Retell and Twilio resources.
 - **`ClaireAi` Supabase project decision** is its own session. Not folded into Phase 1.5.
 - **Hardcoded Claire-era artifacts in three scripts** (PROJECT_INVENTORY item #16) will now return Twilio 404 if executed. Annotation added to PROJECT_INVENTORY.md so the next reader is not surprised. Cleanup is owned by the rename sweep (SESSION_LOG.md Pending follow-up #3) or by Phase 4 bring-up, whichever runs first.
 - **No new tripwire warranted.** The deletions were authorized, reviewed, executed, and verified through standard means. T-006/T-007/T-008 already cover the secret-handling and broad-staging failure modes that were live in this session.
 
 ### What's open for next session
 
-- **Vercel `claire-ai-beta.vercel.app` decommission.** Awaiting CEO dashboard check; will be folded into Phase 1.5's PR or a follow-up PR.
-- **`ClaireAi` Supabase project (`mnsclowesetxpwpukohx`) decision.** Separate session; not folded into Phase 1.5.
-- **ADR-003 Phase 2** (or Phase 4 redraft, per Session 007 follow-up #1, depending on whether the Architect collapses Phase 2 under "Claire is dead" reasoning) is the natural next executable step once Vercel decommission lands.
+- **`ClaireAi` Supabase project (`mnsclowesetxpwpukohx`) decision.** The only remaining ADR-002-adjacent cleanup. Separate session; not folded into Phase 1.5. Recommended next step: restore-and-snapshot-then-delete, or delete outright if confirmed no value.
+- **ADR-003 Phase 2** (or Phase 4 redraft, per Session 007 follow-up #1, depending on whether the Architect collapses Phase 2 under "Claire is dead" reasoning) is the natural next executable step.
 - **PR #5 (Phase 1 repo hygiene)** remains open; awaiting CEO review and merge. Vercel Preview/Development env-var configuration also still pending CEO dashboard work as documented in the PR body.
 
 ### Carryover
 
 - **PR #5 (Phase 1: repo hygiene).** Open. Awaiting CEO review/merge and Vercel Preview/Development env-var configuration.
-- **This PR (Phase 1.5: Claire decommission Retell + Twilio).** Open against `phase-1-5-claire-decommission`. Awaiting CEO review and merge; Vercel decommission pending dashboard data.
+- **This PR (Phase 1.5: Claire decommission Retell + Twilio + Vercel-confirmed-already-deleted).** Open against `phase-1-5-claire-decommission`. Awaiting CEO review and merge. ADR-002 full decommission commitment closes when this PR merges.
 - **Pending follow-up #1** (ADR-003 Phase 4 redraft — cutover to bring-up): unchanged.
 - **Pending follow-up #2** (PROJECT_INVENTORY / DECISIONS dead-ID propagation): unchanged.
 - **Pending follow-up #3** (Rename sweep per ADR-008): unchanged. Will now include cleanup of the three hardcoded-Claire-trunk scripts as part of its scope.
