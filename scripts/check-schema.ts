@@ -7,7 +7,7 @@ async function main() {
   const { supabaseAdmin } = await import('../lib/supabase');
 
   // Pull one row from each table to see the column shape, even if empty
-  const tables = ['amp_organizations', 'amp_agents'];
+  const tables = ['customers', 'agent_templates', 'agents', 'conversations', 'appointments', 'alerts'];
 
   for (const table of tables) {
     console.log('=== ' + table + ' ===');
