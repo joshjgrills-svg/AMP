@@ -20,7 +20,7 @@ async function main() {
   }
 
   const spec = await res.json() as any;
-  const tables = ['amp_organizations', 'amp_agents'];
+  const tables = ['customers', 'agent_templates', 'agents', 'conversations', 'appointments', 'alerts'];
 
   for (const table of tables) {
     console.log('=== ' + table + ' ===');

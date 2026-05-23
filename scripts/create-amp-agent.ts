@@ -7,51 +7,54 @@ import dotenv from 'dotenv';
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 const ORG_NAME = 'AMP Internal Test';
-const ORG_TYPE = 'plumber';
 const AGENT_NAME = 'AMP Plumber - Default';
 const VOICE_ID = '11labs-Adrian';
 const MODEL = 'claude-4.6-sonnet';
+
+function slugify(s: string): string {
+  return s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
 
 async function main() {
   const { supabaseAdmin } = await import('../lib/supabase');
   const { createRetellAgent } = await import('../lib/retell');
 
-  // 1. Load the plumber template
+  // 1. Load the plumbing template
   const { data: template, error: tmplError } = await supabaseAdmin
-    .from('amp_templates')
-    .select('id, type, name, greeting, system_prompt')
-    .eq('type', 'plumber')
+    .from('agent_templates')
+    .select('id, industry, name, greeting, system_prompt')
+    .eq('industry', 'plumbing')
     .single();
 
-  if (tmplError) throw new Error('Failed to load plumber template: ' + tmplError.message);
-  if (!template) throw new Error('No plumber template found in amp_templates');
-  console.log('Loaded template: ' + template.name + ' (' + template.type + ')');
+  if (tmplError) throw new Error('Failed to load plumbing template: ' + tmplError.message);
+  if (!template) throw new Error('No plumbing template found in agent_templates');
+  console.log('Loaded template: ' + template.name + ' (' + template.industry + ')');
 
-  // 2. Get or create the org (lookup by name since there is no slug)
-  let { data: org, error: orgFetchError } = await supabaseAdmin
-    .from('amp_organizations')
-    .select('id, name, type')
+  // 2. Get or create the customer (lookup by name)
+  let { data: customer, error: customerFetchError } = await supabaseAdmin
+    .from('customers')
+    .select('id, name')
     .eq('name', ORG_NAME)
     .maybeSingle();
 
-  if (orgFetchError) throw new Error('Org lookup failed: ' + orgFetchError.message);
+  if (customerFetchError) throw new Error('Customer lookup failed: ' + customerFetchError.message);
 
-  if (!org) {
-    console.log('Creating org: ' + ORG_NAME);
-    const { data: newOrg, error: orgCreateError } = await supabaseAdmin
-      .from('amp_organizations')
+  if (!customer) {
+    console.log('Creating customer: ' + ORG_NAME);
+    const { data: newCustomer, error: customerCreateError } = await supabaseAdmin
+      .from('customers')
       .insert({
         name: ORG_NAME,
-        type: ORG_TYPE,
+        slug: slugify(ORG_NAME),
       })
-      .select('id, name, type')
+      .select('id, name')
       .single();
 
-    if (orgCreateError) throw new Error('Org create failed: ' + orgCreateError.message);
-    org = newOrg;
-    console.log('  org id: ' + org!.id);
+    if (customerCreateError) throw new Error('Customer create failed: ' + customerCreateError.message);
+    customer = newCustomer;
+    console.log('  customer id: ' + customer!.id);
   } else {
-    console.log('Reusing existing org: ' + org.name + ' (' + org.id + ')');
+    console.log('Reusing existing customer: ' + customer.name + ' (' + customer.id + ')');
   }
 
   // 3. Create the Retell agent
@@ -66,12 +69,12 @@ async function main() {
   console.log('  retell agent_id: ' + agentId);
   console.log('  retell llm_id:   ' + llmId);
 
-  // 4. Insert matching amp_agents row so the webhook handler can resolve it
+  // 4. Insert matching agents row so the webhook handler can resolve it
   const { data: agentRow, error: agentInsertError } = await supabaseAdmin
-    .from('amp_agents')
+    .from('agents')
     .insert({
-      organization_id: org!.id,
-      template_id: template.id,
+      customer_id: customer!.id,
+      agent_template_id: template.id,
       name: AGENT_NAME,
       retell_agent_id: agentId,
       retell_llm_id: llmId,
@@ -83,20 +86,20 @@ async function main() {
     .single();
 
   if (agentInsertError) {
-    console.error('FAILED to insert amp_agents row: ' + agentInsertError.message);
+    console.error('FAILED to insert agents row: ' + agentInsertError.message);
     console.error('Retell agent ' + agentId + ' was created but is now orphaned.');
     console.error('Either delete it via the Retell dashboard or re-run after fixing the schema.');
     throw agentInsertError;
   }
 
-  console.log('  amp_agents row id: ' + agentRow.id);
+  console.log('  agents row id: ' + agentRow.id);
 
   console.log('');
   console.log('=== Done ===');
   console.log('');
   console.log('Add these to .env.local (replacing any existing values):');
   console.log('  AMP_AGENT_DEFAULT_V1=' + agentId);
-  console.log('  AMP_INTERNAL_TEST_ORG_ID=' + org!.id);
+  console.log('  AMP_INTERNAL_TEST_ORG_ID=' + customer!.id);
   console.log('  (LLM ID ' + llmId + ' — no env var; AMP_PLUMBER_LLM_ID removed per ADR-008 rename sweep)');
 }
 

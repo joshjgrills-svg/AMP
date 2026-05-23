@@ -159,8 +159,8 @@ export async function POST(request: Request) {
   // both to attribute new call rows and to enforce that we only ingest calls
   // for agents we actually own.
   const { data: agent, error: agentLookupError } = await supabaseAdmin
-    .from('amp_agents')
-    .select('id, organization_id')
+    .from('agents')
+    .select('id, customer_id')
     .eq('retell_agent_id', call.agent_id)
     .maybeSingle();
 
@@ -176,7 +176,7 @@ export async function POST(request: Request) {
 
   // Look up existing call row by retell_call_id.
   const { data: existing, error: callLookupError } = await supabaseAdmin
-    .from('amp_calls')
+    .from('conversations')
     .select('id')
     .eq('retell_call_id', call.call_id)
     .maybeSingle();
@@ -193,7 +193,7 @@ export async function POST(request: Request) {
     typeof call.duration_ms === 'number' ? Math.round(call.duration_ms / 1000) : null;
 
   const baseFields: Record<string, unknown> = {
-    organization_id: agent.organization_id,
+    customer_id: agent.customer_id,
     agent_id: agent.id,
     retell_call_id: call.call_id,
     direction: call.direction ?? 'inbound',
@@ -245,7 +245,7 @@ export async function POST(request: Request) {
 
   if (existing) {
     const { error } = await supabaseAdmin
-      .from('amp_calls')
+      .from('conversations')
       .update(eventFields)
       .eq('id', existing.id);
     if (error) {
@@ -254,7 +254,7 @@ export async function POST(request: Request) {
     }
   } else {
     const { error } = await supabaseAdmin
-      .from('amp_calls')
+      .from('conversations')
       .insert({ ...baseFields, ...eventFields });
     if (error) {
       console.error('[retell webhook] insert failed', error);
