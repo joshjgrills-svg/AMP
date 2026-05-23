@@ -734,3 +734,47 @@ None. T-006/T-007/T-008 held throughout: `.env.local` content was not echoed to 
 - **PR independence vs. cross-PR coordination — the version of this note that survives contact with reality.** The original push of this PR was branched from `main` at `79213e7`, before PR #5 and PR #6 merged. The strategy at the time was: keep the rename sweep PR independent of PR #5 and PR #6 by deferring `.env.example` to PR #5's branch. That deferral didn't survive — PR #5 merged with the old names before the coordination could happen. Net learning: when a queued change touches a file another open PR creates, the coordination must be either (a) a real `gh pr edit`/commit-to-other-branch action with confirmation, or (b) a stacked PR with explicit base-branch dependency, NOT a "coordinate in the PR body" arrangement. The "merge order is the CEO's call" framing assumed the CEO would also reconcile the cross-PR edits, which is unrealistic for a sweep this size. Recovery here was a clean rebase + .env.example fold-in + force-push; cheap because the rename was mechanical, but the orientation error itself (claiming PRs were still open when they had merged 30+ minutes earlier) was worth a tripwire-style review and is the kind of failure mode the auto-memory `MEMORY.md` discipline is supposed to prevent in the first place.
 - **`scripts/create-amp-agent.ts` is broken**, hardcodes the Claire-era vertical ("plumber" / "AMP Plumber - Default"), and won't run against the current schema. The rename sweep updated the env-var name in its console.log instruction but left the broader brokenness for Phase 4. If Phase 4 needs to provision a fresh agent, expect to rewrite this script (or replace it) rather than fix it.
 - **`scripts/bind-phone.ts` is functional** post-rename but assumes the AMP phone number is already registered in Retell's phone-number registry (which it isn't per Phase 1.5 audit — Retell's `/list-phone-numbers` returns empty). To actually bind, the number first needs registering via Retell's phoneNumber.import API (formerly the deleted `register-phone.ts` did this with a Claire-named trunk). Phase 4 owns the new bring-up path.
+
+---
+
+## Session 011 — ADR-003 Phase 2 + Phase 4 redraft + dead-ID propagation
+**Date:** 2026-05-23 (morning)
+**Duration:** ~30 minutes (status check + Architect redraft + dead-ID propagation + commit)
+**Participants:** Architect (Claude), CEO (Josh)
+
+### What happened
+
+Morning status check confirmed PR #7 OPEN at that moment, working tree clean, main at `6ed26c1`. CEO commissioned the Architect to redraft ADR-003 Phase 2 and Phase 4 under the two realities established in Session 007: "Claire is dead, AMP is fresh build" (existing data is throwaway) and "the production plumber testbed doesn't exist as a wired-up call path" (no cutover to perform; Phase 4 is bring-up). Architect produced the redraft + addressed seven specific architecture questions + folded the dead-ID propagation (Pending follow-up #2) into the same commit. C-suite review notes recorded inline in the redraft section under ADR-003. **PR #7 was merged at 2026-05-23T13:12:34Z (CEO) while the redraft commit was being prepared.** The redraft commit `46547b8` was made against pre-merge main; the push was rejected; the commit was rebased onto post-merge main (`c97857e`); conflicts in `PROJECT_INVENTORY.md` (env-var snapshot lines touched by both PR #7 and this commit) and `SESSION_LOG.md` (Session 010 from PR #7 vs. Session 011 from this commit both at end-of-file) were resolved during the rebase, and the rebased commit was pushed.
+
+### What got decided
+
+- **Phase 2 simplifies dramatically.** Drop the faithful-capture-and-reconcile work; write the canonical Constitution-compliant schema directly as `supabase/migrations/0000_initial_schema.sql`. Drop the live `amp_*` tables as part of the migration. Six tables in the initial baseline: `customers`, `agents`, `conversations`, `agent_templates`, `appointments`, `alerts`. Five tables deferred to later migrations when load-bearing: `end_users`, `subscriptions`, `workspaces`, `handoffs`, `weekly_reports`. RLS policies in the same migration as table creation (default-deny per §4.5).
+- **Phase 4 reframes from cutover to bring-up.** Sequence is receiver-before-sender: configure Retell agent (`webhook_url` + publish via Retell API) first, then point Twilio `voice_url` at Retell's Twilio-inbound URL via Twilio REST API, then CEO places one test call. Three Builder-via-API steps + one CEO-with-phone step.
+- **Routing decision: HTTP webhook, not SIP trunk.** Reasoning recorded inline in the redraft: inbound-only scope, fewer state surfaces to drift, reversibility, adapter shape preserved for future SIP if outbound voice becomes needed.
+- **Phase 2 + Phase 4 stay separate.** Different blast radii, independent reversibility, sequential dependency is one-way and naturally phaseable. Architect flagged Phase 2 + Phase 3 collapse as a possible follow-on simplification for the executing architect.
+- **Confidence levels updated:** Phase 2 99% (was 95%), Phase 4 95% (was 90%). Time estimates: Phase 2 ~1–2 hours (was half a day), Phase 4 ~30–45 minutes.
+- **CEO manual work in execution = one step:** the Phase 4 test call. All other steps go via Supabase MCP / Retell API / Twilio API.
+- **Pending follow-up #2 closed in this commit.** Dead IDs (`agent_58fbaa9f9eb2e1f6698e54bedd`, `llm_2387332d2303961cb4d67d815d9e`) replaced with live IDs (`agent_0e211c256211ef2ead23cc8375`, `llm_b440eb1b707430fc9aa4d8d0164d`) in PROJECT_INVENTORY.md env-var snapshot and Open Question #8. ADR-002 body NOT edited (historical content); a new Status appendage on ADR-002 records the correction.
+
+### What's open for next session
+
+- **CEO review of the redraft.** Before any Phase 2 or Phase 4 execution begins. The redraft section under ADR-003 in DECISIONS.md is the artifact.
+- **PR #7 (rename sweep per ADR-008) — MERGED 2026-05-23T13:12:34Z (during this session, after the redraft commit was prepared).** Env var names are now canonical on main. The remaining PR-#7-adjacent work is the Vercel dashboard rename per the PR #7 body checklist; still pending CEO execution.
+- **Pending follow-up #1 (Phase 4 redraft)** — this redraft itself is the deliverable. After CEO approval, follow-up #1 closes and execution proceeds.
+- **Pending follow-up #2 (dead-ID propagation)** — closed in this commit.
+- **Pending follow-up #3 (rename sweep)** — CLOSED (PR #7 merged this session).
+- **ClaireAi Supabase project decision** — still queued, separate session.
+
+### Tripwires fired
+
+None. The redraft is docs-only; no secrets handled; no destructive actions taken.
+
+### Constitution version at session start: v1.3
+### Constitution version at session end: v1.3 (no amendment in this session — ADR-003 is amended per its own Section 9 amendment procedure via the redraft section, not a Constitution amendment)
+
+### Notes for future-Claude
+
+- **The redraft IS the planning artifact for Phase 2 and Phase 4 execution.** Read it before starting either phase. It enumerates pre-conditions, sequences, failure paths, and rollback procedures.
+- **The CTO/CSO/COO C-suite review notes are inline in the redraft section** (per Constitution §7). If a future session disagrees with any of the resolutions there, a Section 9 amendment is required — not a silent override.
+- **Phase 4 prerequisite of PR #7 merged is now satisfied** (merged during this session at 13:12:34Z). The bring-up sequence's reference to `AMP_AGENT_DEFAULT_V1` is honored by the live `main`.
+- **Mid-session PR merge as a coordination failure mode.** The push-rejected-rebase-resolve loop in this session is the same shape as Session 010's "PR #7 branched from stale main" loop — both come from making forward-looking claims about a remote-state branch without re-fetching at the moment of action. The discipline going forward: `git fetch origin` immediately before any `git push` to `main`, and immediately before any cross-PR coordination claim in a PR body or commit message. Both Session 010 and Session 011 confirm the pattern; if it recurs in Session 012+ a formal tripwire is warranted.

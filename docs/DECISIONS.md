@@ -145,6 +145,22 @@ ADR-002's full decommission commitment is **executed** as of 2026-05-23. Detail:
 
 ADR-002 is now closed. Full audit + execution log lives at `docs/PHASE_1_5_AUDIT.md`. Session 009 narrative at SESSION_LOG.md.
 
+### Status (appended 2026-05-23, Session 011 — Dead-ID propagation correction)
+
+The body of this ADR (Trade-offs accepted, ¶3) names two Claire-era Retell resources as "the active AMP plumber testbed": agent `agent_58fbaa9f9eb2e1f6698e54bedd` and LLM `llm_2387332d2303961cb4d67d815d9e`. Session 007 discovered both were deleted upstream of ADR-002 by an unrecorded action; the Session 009 Status appendage above acknowledges the discovery. The body is preserved as historical contemporaneous content; this appendage records that downstream documents have been corrected to cite the live IDs.
+
+**Live IDs as of 2026-05-23 (post-Session-007 rename, post-Phase-1.5 cleanup):**
+
+- Retell agent: `agent_0e211c256211ef2ead23cc8375` ("AMP - Plumbing - V1")
+- Retell LLM: `llm_b440eb1b707430fc9aa4d8d0164d` (claude-4.6-sonnet, plumbing prompt)
+
+**Surfaces corrected in this commit** (Session 011, alongside the ADR-003 Phase 2 + Phase 4 redraft):
+
+- `docs/PROJECT_INVENTORY.md` — env-var snapshot lines 167–168 updated to live values; Open question #8 annotated as resolved.
+- `docs/DECISIONS.md` ADR-003 body references to the dead IDs (Phase 0 verification spec, Phase 4 cutover spec) — NOT edited in place; superseded by the ADR-003 Phase 2 + Phase 4 redraft section appended at the bottom of ADR-003 in this same commit.
+
+Closes Pending follow-up #2 from Session 007 ("Update `docs/PROJECT_INVENTORY.md` and `docs/DECISIONS.md` to reflect live agent/LLM IDs").
+
 ---
 
 *Future decisions append below this line. Decisions are numbered sequentially (ADR-002, ADR-003, etc.) and never renumbered.*
@@ -879,6 +895,240 @@ This ADR would be re-evaluated post-execution if any phase's verification fails 
 - `docs/PROJECT_INVENTORY.md` (2026-05-13) — the source of the 27 compliance issues
 - `docs/scout/2026-05-18_home-services-market.md` — customer-validation context for wedge scope
 - `docs/scout/2026-05-22_avoca-competitive-deep-dive.md` — competitive context informing why cleanup speed matters
+
+---
+
+## ADR-003 Phase 2 + Phase 4 Redraft (2026-05-23): From cutover to bring-up under the "Claire is dead" operating principle
+
+**Date:** 2026-05-23 (Session 011)
+**Status:** Accepted (supersedes the original Phase 2 and Phase 4 plans inside ADR-003)
+**Decided by:** CEO (Josh), Architect (Claude) with C-suite review
+**Amends:** ADR-003 — specifically the original Phase 2 ("Migrations baseline + faithful schema capture") and Phase 4 ("Destructive rename cutover + Retell webhook URL move")
+**Does not amend:** Phases 0, 1, 1.5, 3, 5, 6, 7 (those stand as originally planned or already executed)
+
+### Triggering realities
+
+Two facts established since the original ADR-003 was written:
+
+1. **"Claire is dead, AMP is fresh build" is the operating principle** (CEO, Session 007, 2026-05-23 — recorded in SESSION_LOG Session 007 line 534 and as reasoning trail in ADR-007). Existing Supabase contents are treated as throwaway per ADR-002 line 98. The "faithful capture" and "destructive rename" framings the original Phase 2 and Phase 4 inherited are no longer load-bearing.
+
+2. **There is no "production plumber testbed" to cut over from** (Session 007 drift investigation). The Twilio number `+12494448711` voice URL points at Twilio's demo (`https://demo.twilio.com/welcome/voice/`); the live Retell agent (`agent_0e211c256211ef2ead23cc8375` "AMP - Plumbing - V1") is unpublished with no `webhook_url`; the Claire SIP trunk that historically routed the number was deleted in Phase 1.5 (Session 009). No inbound call placed today reaches AMP. Phase 4 is a bring-up, not a cutover.
+
+### What is deleted from the original Phase 2
+
+- **Faithful capture of the live schema as `supabase/migrations/0000_baseline.sql`.** Under "Claire is dead," there is no schema we want to faithfully preserve. The existing `amp_*` tables are throwaway; the canonical Constitution-compliant schema is what we want.
+- **Drift reconciliation work between `supabase/schema.sql` and the live `amp_*` tables.** Inventory item #15 catalogued specific drift (`amp_templates.type` missing, `amp_organizations.type` missing, `amp_agents.retell_llm_id` missing); the original Phase 2 plan committed to reconciling these. Under the new approach, drift is irrelevant — the live tables are dropped and recreated.
+- **The "as-found" snapshot documentation** that the original Phase 2 was going to produce. Not needed; the snapshot already exists in `docs/PROJECT_INVENTORY.md` (Session 001) for any future archaeologist.
+
+### What is deleted from the original Phase 4
+
+- **The "destructive rename cutover" framing.** No live data needs renaming; the dropped tables are recreated under the canonical names directly.
+- **`ALTER TABLE RENAME` migrations against a live-ingesting webhook.** Not applicable — no live webhook ingestion happens today.
+- **The "cutover window" risk accounting** (the 30-minute window during which inbound calls might miss). Not applicable — no inbound traffic to miss.
+- **Phase 4's `/api/webhooks/retell/` → `/api/webhooks/retell/v1/` URL move framed as a cutover.** The versioning move (Constitution §3.3) is already owned by Phase 3 (code changes + deployment). Phase 4 just points Retell at the already-versioned URL.
+- **Test call against `agent_58fbaa9f9eb2e1f6698e54bedd`** — that agent is dead. Test call uses `agent_0e211c256211ef2ead23cc8375` ("AMP - Plumbing - V1") per the dead-ID propagation correction landed in the same commit as this redraft.
+
+### What is added to Phase 2
+
+**Phase 2 (Redrafted) — Canonical schema, no preservation.** Estimated 1–2 hours. Confidence 99%.
+
+The Architect produces `supabase/migrations/0000_initial_schema.sql` directly in the canonical Constitution-compliant shape. The Builder applies it via Supabase MCP. The live `amp_*` tables are dropped as part of the migration (or in a preceding `0000_drop_legacy.sql` companion migration — Builder picks the cleaner sequencing). No data is preserved.
+
+**Tables in the initial baseline (per Constitution §1.3 locked terms + ADR-002 Q6 AMP-specific extensions):**
+
+| Table | Rationale |
+|---|---|
+| `customers` | Constitution §1.3 locked term — replaces `amp_organizations` |
+| `agents` | Constitution §1.3 locked term — replaces `amp_agents` |
+| `conversations` | Constitution §1.3 locked term — replaces `amp_calls` (ADR-002 Q4) |
+| `agent_templates` | AMP-specific extension (ADR-002 Q6) — replaces `amp_templates`; needed by `scripts/create-amp-agent.ts` to seed an agent's prompt from a template |
+| `appointments` | AMP-specific extension (ADR-002 Q6) — replaces `amp_appointments`; preserved as a keeper even though not load-bearing in the call path yet |
+| `alerts` | AMP-specific extension (ADR-002 Q6) — replaces `amp_alerts`; same preservation rationale |
+
+**Tables NOT in the initial baseline (deferred until load-bearing):**
+
+| Table | Why deferred |
+|---|---|
+| `end_users` | §1.3 says "a future `end_users` table may exist when cross-conversation identity becomes valuable." Not load-bearing for V1 inbound voice. Add via later migration when needed. |
+| `subscriptions` | Stripe wiring doesn't exist yet (PROJECT_INVENTORY item #18). Add when Stripe integration lands. |
+| `workspaces` | One customer = one workspace today per §1.3. Workspace partitioning becomes load-bearing when a customer needs multiple. |
+| `handoffs` | Multi-agent handoff is the platform's eventual defensibility (§10.3) but no agent-to-agent handoff path is wired yet. Add when the second agent type ships. |
+| `weekly_reports` | AMP-specific extension from the Claire era; no current code reads or writes it. Add when the reporting feature is built. |
+
+**Constraints baked into 0000_initial_schema.sql per Constitution:**
+
+- Every table has `id uuid primary key default gen_random_uuid() not null` (§1.1).
+- Every table has `created_at timestamptz not null default now()` and `updated_at timestamptz not null default now()` with the `updated_at` trigger included in the migration (§1.1).
+- Every foreign key uses the `{referenced_table_singular}_id` naming and declares explicit `on delete` behavior (§1.1).
+- Every table has Row-Level Security enabled and explicit allow policies declared in the same migration that creates it (§1.1, §4.5). **Default deny**; no "we'll tighten policies later."
+- Enum columns use Postgres enum types named `{table_singular}_{column_singular}_type` (§1.1).
+- Indexes declared inline in the migration that creates the indexed column (§1.1).
+- No `proscore_provider_id` FK to a `providers` table that doesn't exist in this repo (ADR-002).
+- No `amp_` prefix anywhere (Constitution §1.3 locked terms applied directly).
+
+**Builder's procedural sequence for Phase 2:**
+
+1. Architect produces `0000_initial_schema.sql` (the canonical baseline). Reviewer audits it against §1.1, §1.3, §4.5 before any application to Supabase.
+2. Builder applies the migration to the AMP Supabase project (`yxuhjxxbgbuznpoekwpj`) via the Supabase MCP `apply_migration` tool.
+3. Builder verifies via `list_tables` that the six canonical tables are present and the `amp_*` tables are absent.
+4. Builder verifies via Supabase Studio (or `execute_sql`) that RLS is enabled on each table and the policies exist.
+5. Builder commits `supabase/migrations/0000_initial_schema.sql` to the repo on a feature branch. PR (this touches non-docs paths so §7.5 carve-out does not apply).
+6. PR review, merge, deploy.
+
+### What is added to Phase 4
+
+**Phase 4 (Redrafted) — Bring-up: configure Retell, configure Twilio, smoke-test.** Estimated 30–45 minutes. Confidence 95%.
+
+The phase shape changes from "cutover from old endpoint to new endpoint" to "wire the call path together for the first time." Sequence is receiver-before-sender: configure the Retell agent fully before pointing Twilio at it, so that the first call to land hits a ready receiver.
+
+**Routing decision — HTTP webhook, not SIP trunk.**
+
+The Phase 1.5 Claire SIP trunk deletion left two routing options for the inbound call path. The Architect's recommendation, with CEO approval, is HTTP webhook routing. Reasoning:
+
+- **Inbound-only scope.** AMP's V1 wedge is inbound voice (per North Star). Outbound voice is not in scope for the next 12 months (ADR-004). SIP trunks earn their complexity when bidirectional routing or outbound-from-Twilio is needed; today's scope doesn't justify that complexity.
+- **One configuration field vs. a routing stack.** HTTP webhook is one Twilio `voice_url` field set to Retell's Twilio-inbound URL. SIP trunk requires creating a trunk, attaching the number, setting origination URLs, optionally credentials, optionally IP ACLs — every one of which is a state surface that can drift (the Claire trunk that just got deleted IS the example of this drift).
+- **Reversibility.** HTTP webhook can be reset to the Twilio demo URL with one dashboard or API edit. SIP trunk requires deleting the trunk and waiting for routing reconvergence.
+- **Adapter shape preserved.** Constitution §3.2 multi-provider mandate is about adapter shape, not routing topology. `lib/twilio.ts` and `lib/retell.ts` can support SIP routing if/when a future ADR introduces it. The HTTP webhook choice now does not preclude that future ADR.
+- **What would change this recommendation:** any of (a) AMP needs outbound voice from Twilio under Retell control, (b) custom SIP headers or SIPREC recording become product requirements, (c) call volume hits a tier where SIP economics beat per-call HTTP economics. None applies today; if any becomes true, a focused ADR introduces an "AMP" SIP trunk under ADR-008's naming convention.
+
+**Builder's procedural sequence for Phase 4:**
+
+Pre-conditions (verify before Phase 4 starts):
+
+- Phase 2 done: canonical schema live in Supabase; the six baseline tables exist with RLS policies.
+- Phase 3 done: code references use canonical table names; webhook handler lives at `app/api/webhooks/retell/v1/route.ts`; latest deploy is on Vercel and `https://amp-beta-one.vercel.app/api/webhooks/retell/v1/` returns 200/4xx (not 404) when probed with a synthetic POST.
+- PR #7 (rename sweep per ADR-008) merged: code, `.env.example`, `.env.local` all reference `AMP_AGENT_DEFAULT_V1` / `AMP_PHONE_NUMBER`. Vercel env vars (Production at minimum) reflect the new names with live values.
+- The live Retell agent ID matches `AMP_AGENT_DEFAULT_V1` in `.env.local` and in Vercel Production env vars.
+
+Bring-up steps (Builder owns; CEO does the test call):
+
+1. **Configure the Retell agent (receiver-side first).**
+   - PATCH `/update-agent/{AMP_AGENT_DEFAULT_V1}` setting `webhook_url=https://amp-beta-one.vercel.app/api/webhooks/retell/v1/`.
+   - Verify via GET that the agent shows the new `webhook_url`.
+   - Publish the agent (Retell's publish flow advances `version` and sets `is_published: true`).
+   - Verify via GET that `is_published: true` and `webhook_url` matches.
+
+2. **Configure Twilio routing (sender-side, last).**
+   - Via Twilio REST API (using `TWILIO_ACCOUNT_SID` + `TWILIO_AUTH_TOKEN`): update `+12494448711`'s `voice_url` from the current Twilio demo URL to Retell's Twilio-inbound URL. The exact Retell URL format will be verified at execution time via Retell docs / dashboard; format is approximately `https://api.retellai.com/twilio-voice-webhook/{agent_id}`. Builder confirms the exact path before issuing the update.
+   - Verify via Twilio REST API that the `voice_url` reads back as the expected Retell URL.
+
+3. **Smoke test (CEO places one real call).**
+   - CEO calls `+1 (249) 444-8711` from a personal phone.
+   - Verify: Retell agent answers within 2 seconds; greeting matches the "AMP - Plumbing - V1" prompt; voice quality is acceptable.
+   - Verify: Retell delivers `call_started` to `/api/webhooks/retell/v1/`; Vercel logs show the request returning 200.
+   - Verify: a row appears in `conversations` with the correct shape (`retell_call_id`, `agent_id` foreign key resolves, `started_at` populated).
+   - Verify: `call_ended` and `call_analyzed` events also deliver and update the row.
+   - Verify: Sentry shows zero new error events from the call.
+
+4. **Post-test cleanup.**
+   - Decide: keep the test call row in `conversations` as evidence-of-life, or delete it. Recommendation: keep, with a `notes` annotation that it's the bring-up smoke test.
+   - Update SESSION_LOG.md with the Phase 4 execution narrative.
+   - Append a "Status (appended {date}, Session N — Phase 4 execution)" note under this redraft section in DECISIONS.md.
+
+**Failure paths and rollbacks:**
+
+- Retell agent webhook URL wrong / publish fails: PATCH agent state back to `webhook_url=null`, set `is_published: false` via API. Twilio routing not yet touched, so call path stays inert.
+- Twilio `voice_url` update fails or routes incorrectly: PATCH `voice_url` back to `https://demo.twilio.com/welcome/voice/` (the inert demo URL). Reverts to pre-Phase-4 state.
+- Test call connects but webhook doesn't fire: webhook URL on Retell agent is misconfigured (re-verify exact path); or `/api/webhooks/retell/v1/` deployment is broken (re-deploy from Vercel); or signature verification rejects the webhook (check `RETELL_API_KEY` in Vercel env vars matches the API key the live agent's webhook signs with).
+- Webhook fires but DB insert fails: schema migration issue (re-check `conversations` table shape) or RLS policy blocks the service-role client (audit policies; service-role should bypass).
+
+### Phase 2 + Phase 4 — collapse question, answered
+
+**Recommendation: keep Phase 2 and Phase 4 separate.**
+
+Arguments for collapse (which the user surfaced): with no live data to preserve and no live call path to cut over from, the schema work and the bring-up work could theoretically happen in one coordinated session.
+
+Arguments against collapse, which carried the decision:
+
+1. **Different surfaces, different blast radii.** Phase 2 touches the Supabase database only. Phase 4 touches Retell agent state, Twilio routing, and live call infrastructure that any inbound call after Phase 4 will hit. Bundling them means a Phase 2 schema mistake and a Phase 4 routing mistake are debugged in the same session against the same context, which dilutes attention.
+2. **Independent reversibility.** Phase 2 can be re-applied (drop tables, re-run migration) without disturbing the call path. Phase 4 can be reverted (set webhook URL to null, set Twilio `voice_url` back to demo) without disturbing the schema. Conflating them makes rollback the more invasive of the two.
+3. **The natural reviewer boundary.** Constitution §1 (database) and Constitution §3 (API contracts / external integrations) are reviewed under different mental models. Different review checks fire on each phase.
+4. **Sequential dependency is real but not tight.** Phase 4 requires Phase 2 to be live, but Phase 2 doesn't require knowing anything about Phase 4. The dependency is one-way; that's the textbook case for sequential phases, not collapse.
+
+**Architect's adjacent observation (not in scope but worth flagging):** Phase 2 + Phase 3 collapse is a more defensible idea. Phase 2 under this redraft is small (write canonical schema + apply); Phase 3 is also small (code references to canonical names + webhook to `/v1/`). Both are docs-and-code, both ship in a PR, both have similar reviewer scope. If a future architect picks up execution, they may choose to combine 2+3 into a single "Phase 2/3 — canonical schema + code references + webhook versioning" phase. This would still leave Phase 4 separate (bring-up against live infrastructure). This redraft does NOT make that collapse decision; it flags it as a follow-on simplification for the executing architect to consider.
+
+### Updated confidence levels
+
+Original ADR-003 confidence:
+
+- Phase 0 (verification spike): 99% — executed in Session 007, PASS
+- Phase 1 (repo hygiene): 99% — executed in PR #5, merged
+- Phase 1.5 (Claire decommission): 95% — executed in PR #6, merged
+- Phase 2 (migrations baseline, original framing): 95%
+- Phase 3 (RLS + code updates): 90%
+- Phase 4 (cutover, original framing): 90%
+- Phases 5, 6, 7: 95%, 99%, 99%
+
+Post-redraft:
+
+- **Phase 2 (canonical schema, no preservation): 99%.** With nothing to reconcile, the work is "write what we want and apply it." The remaining 1% is operational (Supabase MCP behavior on a destructive migration against the live project — Builder verifies as part of step 3).
+- **Phase 4 (bring-up): 95%.** Up from 90%. The two largest original unknowns are both resolved: Retell URL behavior (Phase 0 PASS — immediate effect on draft, no republish needed) and live-data integrity (moot — no live data). Remaining 5% is integration unknowns that only resolve at the test call (Retell agent voice quality on the actual prompt, Twilio→Retell URL format detail, signature-verification path).
+
+No change to other phases.
+
+### Updated time estimates
+
+- **Phase 2:** 1–2 hours (was: half a day). Smaller because the faithful-capture and reconciliation work is deleted.
+- **Phase 4:** 30–45 minutes (was: 30–60 minutes). Marginally smaller and lower-variance because the cutover-window risk and rollback complexity are deleted; bring-up is a linear sequence of API calls + one test call.
+
+### CEO manual work in execution
+
+Phase 2: **None.** Builder applies the migration via Supabase MCP. CEO reviews the migration file in the PR (per Constitution §7 PR discipline) before merge.
+
+Phase 4: **One step.** The test call from CEO's personal phone (step 3 above). Twilio `voice_url` is updated via Twilio REST API by the Builder (we have `TWILIO_ACCOUNT_SID` + `TWILIO_AUTH_TOKEN` in env). Retell agent state is updated via Retell API by the Builder (`RETELL_API_KEY` in env). The only thing requiring CEO's literal phone is the smoke test, because that's what tests the actual call path.
+
+Optional CEO involvement, not required: dashboard observation of the Twilio routing change at the moment it lands (CEO watches the Twilio console while Builder executes), and dashboard observation of the Retell publish (CEO watches the Retell dashboard). These add CEO time but increase shared awareness; included as optional safety pattern, not procedural requirement.
+
+### C-suite review (Architect's notes per Constitution §7)
+
+**CTO chair — schema simplification.**
+
+- Confirmed: writing the canonical schema directly (vs. faithful capture + rename) is the right call given throwaway data + the operating principle. The one-way-door risk (no recovery to pre-drop state) is acceptable under ADR-002 line 98.
+- Concern raised: the initial baseline must include EVERY table the existing code references. Resolution: the table enumeration in the "Tables in the initial baseline" section above is exhaustive against the code under `app/api/webhooks/retell/route.ts` (the one substantive code surface), `scripts/create-amp-agent.ts`, and `lib/supabase.ts`. If a missing reference surfaces in Phase 3 (code update), a follow-on migration adds it.
+- Concern raised: AMP-specific extensions (`appointments`, `alerts`) are included without load-bearing usage. Justification: ADR-002 Q6 explicitly committed to keeping them as renamed AMP-specific extensions. Dropping them now and re-adding them later would violate that commitment without a Section 9 amendment.
+
+**CSO chair — RLS policies in the new baseline.**
+
+- Confirmed: RLS policies declared in the same migration as table creation (Constitution §1.1).
+- Confirmed: default-deny; explicit allow policies per access pattern; no permissive "we'll tighten later" policies. The Architect's `0000_initial_schema.sql` will be reviewed against the §4.5 checklist before any application to Supabase.
+- Concern raised: the existing webhook handler uses the service-role client (`supabaseAdmin`), which bypasses RLS by design. The new baseline must still enforce RLS for the anon client path so that future authenticated user reads are correctly partitioned. Resolution: every policy is written for the anon and authenticated roles; the service-role bypass is a deliberate exception, not a hole.
+
+**COO chair — manual dashboard work in the bring-up.**
+
+- Confirmed: CEO manual scope in Phase 4 is one step (the test call). Reduced from "Twilio dashboard update + test call" by moving Twilio routing into Builder-via-API.
+- Confirmed: every Builder step is idempotent (PATCH same value twice = same state) and reversible (clear rollback to inert state).
+- Concern raised: bringing up a live phone line means the AMP phone number now ACCEPTS production-shaped traffic. Any real call from the wider world (wrong number, telemarketer, anyone who has the number from any historical surface) will hit the AMP agent and create a `conversations` row. Resolution: this is acceptable at V1 testbed scope; if a stranger calls, the agent answers as "AMP - Plumbing - V1" and they hang up; the row in `conversations` is data quality noise but not a security issue (no PII beyond caller phone number, which is already what Twilio receives). For Build Phase scope, the testbed phone number should be guarded against accidental publication until a real customer is onboarded.
+
+### What would change this redraft
+
+We would revisit this redraft if:
+
+1. **The CEO directs that existing Supabase data IS to be preserved after all.** Reverts Phase 2 to the original faithful-capture-and-reconcile framing. Unlikely given the explicit ADR-002 line 98 and the operating principle, but possible if a regulatory or audit reason emerges.
+2. **A Retell or Twilio capability change moves the routing decision.** Specifically: Retell ships native Twilio integration that obviates the `voice_url` PATCH (less Twilio config), or Twilio deprecates the voice_url pattern (more SIP-trunk relevance). Neither is on either vendor's announced roadmap.
+3. **The test call fails in a way that suggests the HTTP webhook path is structurally wrong.** Specifically: signature verification rejects all calls; latency exceeds 500ms time-to-first-audio (§5.2 budget). Either would trigger an investigation that might surface a need for SIP routing.
+4. **A V2 wedge that includes outbound voice gets prioritized.** Brings the SIP trunk discussion back in scope.
+
+### Implementation implications
+
+This redraft touches:
+
+- `docs/DECISIONS.md` — this redraft section appended under ADR-003; new Status appendage on ADR-002 (dead-ID propagation)
+- `docs/PROJECT_INVENTORY.md` — env-var snapshot lines 167–168 updated to live values (keeps current variable names intact since PR #7 has not yet merged on `main`); Open question #8 annotated as resolved
+- `docs/SESSION_LOG.md` — Session 011 entry added recording the redraft
+
+All under `docs/`. This redraft commits direct to `main` as a single docs-only commit per Constitution §7.5.
+
+The redraft itself is a planning artifact; no Phase 2 or Phase 4 execution begins until the CEO explicitly approves the redraft and authorizes the execution session.
+
+### References
+
+- ADR-002 (this file) — the AMP-Supabase separation that established the "data is throwaway" line (¶3 of Reasoning section)
+- ADR-003 (this file) — the original cleanup plan whose Phase 2 and Phase 4 this redraft amends
+- ADR-007 (this file) — the operating-principle-and-auto-memory-discipline ADR that ratified "Claire is dead, AMP is fresh build"
+- ADR-008 (this file) — the naming convention; ADR-008 rename sweep is the immediate prerequisite for Phase 4 (env var names must be canonical before bring-up references them)
+- Session 007 (SESSION_LOG.md) — drift investigation that established Reality 2 above
+- Session 009 (SESSION_LOG.md) — Phase 1.5 Claire decommission; deleted the SIP trunk routing
+- `docs/PHASE_1_5_AUDIT.md` — the per-resource audit and execution log that this redraft builds on
 
 ---
 
