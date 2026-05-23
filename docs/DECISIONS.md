@@ -1504,3 +1504,62 @@ Audit-clause findings recorded in Session 010 entry and the PR body: `lib/{twili
 Branch: `rename-sweep-adr-008`. The `.env.example` rename is folded into PR #5 (Phase 1 repo hygiene) rather than this PR because PR #5 creates that file. Vercel dashboard work for the renamed env vars is pending CEO execution per the rename-sweep PR body.
 
 Constitution v1.3 (the version bumped when this ADR landed) is unchanged by this status update; the rename sweep is an implementation of ADR-008, not an amendment to it.
+
+### Status (appended 2026-05-23, Session 016 — Phase 4 routing decision reversed)
+
+The Phase 4 redraft above (Session 011) selected HTTP webhook routing over SIP
+trunking and rejected SIP on the stated reasoning that "HTTP webhook is one
+Twilio voice_url field set to Retell's Twilio-inbound URL." Session 015 Step 2
+pre-step disproved this: Retell does not host a per-agent Twilio-inbound webhook
+URL. Direct probe against the assumed URL pattern
+(`https://api.retellai.com/twilio-voice-webhook/{agent_id}`) returns HTTP 404
+from Retell's own API server. Per-agent inbound routing on Retell is exposed
+through SIP trunking via `phoneNumber.import` (with `termination_uri` +
+`inbound_agents`) or through a customer-hosted TwiML route that calls Retell's
+Register Phone Call API per inbound call. There is no Retell-hosted HTTP
+webhook URL for Twilio to point at.
+
+With the load-bearing premise gone, the redraft's anti-SIP reasoning no longer
+holds. SIP trunking via `phoneNumber.import` is now the canonical Phase 4
+routing path. Rationale:
+
+1. The existing `lib/retell.ts:registerPhoneNumber` already wraps the correct
+   API surface (`phone_number`, `termination_uri`, `inbound_agents`,
+   `outbound_agents`). No new code is required.
+2. PHASE_1_5_AUDIT records Claire's working configuration with the exact Retell
+   SIP endpoint (`sip:sip.retellai.com`, priority 10, enabled). This is not new
+   architecture — it is the proven path that ran for months pre-Phase-1.5.
+3. The redraft's drift concern about SIP trunks remains valid but is mitigated
+   by ADR-008 naming on the new trunk and an auditable record in this Status
+   appendage and the Phase 4 execution session log entry.
+
+The TwiML-route alternative (Option B in Session 015's halt report) remains
+viable but requires new code work that is not in any current phase. Deferred
+unless a future ADR introduces it.
+
+**Phase 4 (Re-Redrafted) — Bring-up via SIP trunking.** Estimated 30-45 minutes.
+Confidence 95%.
+
+Step 1 (Retell agent published with canonical webhook_url) is preserved from
+Session 015 and remains valid — the webhook handler at
+`/api/webhooks/retell/v1` fires on Retell events regardless of how the call
+arrived at the Retell agent.
+
+Step 2 (revised):
+
+a. CEO creates a new Twilio Elastic SIP Trunk via dashboard. Friendly name
+   "AMP" (ADR-008 Layer 1). Subdomain "amp.pstn.twilio.com" (or next-available
+   variant if taken). Add one Origination URL: sip:sip.retellai.com, priority
+   10, enabled. Do NOT attach phone numbers to the trunk via Twilio UI;
+   phoneNumber.import handles that binding.
+
+b. Builder runs phoneNumber.import via lib/retell.ts:registerPhoneNumber with:
+   phoneNumber +12494448711, terminationUri set to the chosen subdomain,
+   agentId agent_0e211c256211ef2ead23cc8375, nickname "AMP Production -
+   Plumbing".
+
+c. CEO places test call to +1 (249) 444-8711. Verify conversations row
+   appears, Sentry clean, all three Retell events deliver.
+
+Rollback: phoneNumber.delete removes Retell's claim on the number. Deleting
+the SIP trunk reverts the Twilio side. Both are clean operations.
