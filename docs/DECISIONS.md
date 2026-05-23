@@ -134,6 +134,17 @@ Four tactical answers Josh gave alongside this decision, captured here so they c
 
 `docs/NORTH_STAR.md` placeholder-reserves ADR-002 for the wedge decision. That reservation is now overwritten — today's decision claims ADR-002. The wedge ADR will receive the next available number after ADR-003. NORTH_STAR.md will be updated when the document is next revised; do not edit it as part of this session.
 
+### Status (appended 2026-05-23, Session 009 — Phase 1.5 execution)
+
+ADR-002's full decommission commitment is **executed** as of 2026-05-23. Detail:
+
+- **Retell — DONE (Session 009).** Two Claire-era "from template" agents (`agent_ddd09f387dcccc43b0f24ea350` "Healthcare Check-In", `agent_ceeab21fd886bdb7ea3bb46925` "Patient Screening") and one orphaned LLM (`llm_b470ed9903fcd7c51980e31e3ac2`) deleted via Retell API; verified gone via 404 GETs. Canonical AMP agent `agent_0e211c256211ef2ead23cc8375` ("AMP - Plumbing - V1") and its LLM `llm_b440eb1b707430fc9aa4d8d0164d` remain. Note: this ADR's "Trade-offs accepted" line about preserving `agent_58fbaa9f9eb2e1f6698e54bedd` and `llm_2387332d2303961cb4d67d815d9e` as "the active AMP plumber testbed" was already invalidated by Session 007's drift investigation — those IDs were deleted upstream of ADR-002 by an unrecorded action; their current live replacements are the IDs above.
+- **Twilio — DONE (Session 009).** The Claire-era SIP trunk `TK1be0c12fb9bfc4f7054fbde6b15885f2` (friendly_name "Claire Ai", domain `claireai.pstn.twilio.com`) deleted; verified gone via 404 GET. Phone number `+12494448711` preserved (per Phase 1.5 brief; Phase 4 brings it up) with `trunk_sid` now `null`, voice_url and sms_url still the inert Twilio demo URLs.
+- **Vercel — DONE (pre-audit).** CEO dashboard check on 2026-05-23 confirmed `claire-ai-beta` no longer exists as a Vercel project. The team contains only `amp` (canonical), `finder-hub` (ProScore, unrelated), and `combinecrush` (unrelated). The Claire Vercel project was deleted at an unrecorded date prior to the 2026-05-23 audit. No destructive Vercel action was needed in Phase 1.5; this portion of ADR-002 was already complete before this session began.
+- **Supabase — DEFERRED (separate decision queued).** A Claire-era project (`mnsclowesetxpwpukohx` "ClaireAi", INACTIVE) was discovered in the same Supabase org as the canonical AMP project during the audit. Per CEO instruction, it is NOT touched in Phase 1.5. This is the only remaining Claire-adjacent resource on the AMP infrastructure surface; it is flagged for a separate decision session and is not load-bearing on any current AMP system.
+
+ADR-002 is now closed. Full audit + execution log lives at `docs/PHASE_1_5_AUDIT.md`. Session 009 narrative at SESSION_LOG.md.
+
 ---
 
 *Future decisions append below this line. Decisions are numbered sequentially (ADR-002, ADR-003, etc.) and never renumbered.*
