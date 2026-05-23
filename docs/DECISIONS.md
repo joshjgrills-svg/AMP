@@ -161,6 +161,17 @@ The body of this ADR (Trade-offs accepted, ¶3) names two Claire-era Retell reso
 
 Closes Pending follow-up #2 from Session 007 ("Update `docs/PROJECT_INVENTORY.md` and `docs/DECISIONS.md` to reflect live agent/LLM IDs").
 
+### Status (appended 2026-05-23, Session 012 — Final closure: ClaireAi Supabase project deleted)
+
+ADR-002's full decommission commitment is now **completely executed**. All four targets:
+
+- **Retell — DONE (Session 009).** Claire-era agents and orphaned LLM deleted; verified 404. Documented in the Session 009 Status appendage above.
+- **Twilio SIP trunk — DONE (Session 009).** "Claire Ai" trunk `TK1be0c12fb9bfc4f7054fbde6b15885f2` deleted; verified 404. Phone number `+12494448711` preserved with `trunk_sid: null`.
+- **Vercel `claire-ai-beta` — DONE (pre-audit).** Confirmed deleted at an unrecorded date prior to the Session 009 audit. The Vercel team contains only `amp` (canonical), `finder-hub` (unrelated), and `combinecrush` (unrelated).
+- **Supabase `ClaireAi` (`mnsclowesetxpwpukohx`) — DONE (Session 012, this status note).** Deleted by CEO via Supabase dashboard on 2026-05-23 after the Session 011 carryover queued it as the last Claire-adjacent decision. Deletion verified post-action via Supabase MCP `list_projects` — `mnsclowesetxpwpukohx` is absent from the org `Josh's projects` (`vercel_icfg_bvJnVhI1jinuTeRa8ld4YEpx`). The org now contains exactly three projects: `yxuhjxxbgbuznpoekwpj` (AMP, canonical, ACTIVE_HEALTHY), `olwbvghtptfabpseipaa` (FinderHub-v2, unrelated, ACTIVE_HEALTHY), `qdndcfsyrxxcxapovkso` (combinecrush, unrelated, INACTIVE).
+
+ADR-002 is now fully closed across every Claire-era surface. No Claire-adjacent infrastructure remains on the AMP account anywhere — Retell, Twilio, Vercel, or Supabase. Future references to "Claire" in the repo should be either historical (session log narratives, ADR bodies recording what was true at the time) or operating-principle citations ("Claire is dead, AMP is fresh build" per ADR-007). There is no live Claire resource to point at.
+
 ---
 
 *Future decisions append below this line. Decisions are numbered sequentially (ADR-002, ADR-003, etc.) and never renumbered.*
@@ -999,6 +1010,8 @@ Pre-conditions (verify before Phase 4 starts):
 - Phase 3 done: code references use canonical table names; webhook handler lives at `app/api/webhooks/retell/v1/route.ts`; latest deploy is on Vercel and `https://amp-beta-one.vercel.app/api/webhooks/retell/v1/` returns 200/4xx (not 404) when probed with a synthetic POST.
 - PR #7 (rename sweep per ADR-008) merged: code, `.env.example`, `.env.local` all reference `AMP_AGENT_DEFAULT_V1` / `AMP_PHONE_NUMBER`. Vercel env vars (Production at minimum) reflect the new names with live values.
 - The live Retell agent ID matches `AMP_AGENT_DEFAULT_V1` in `.env.local` and in Vercel Production env vars.
+
+**Status (appended 2026-05-23, Session 012):** Pre-condition satisfied for the Vercel-env-vars line. Vercel env vars across Production / Preview / Development reflect canonical names (`AMP_AGENT_DEFAULT_V1=agent_0e211c256211ef2ead23cc8375`, `AMP_PHONE_NUMBER=+12494448711`) with live values; old names (`AMP_PLUMBER_AGENT_ID`, `AMP_PLUMBER_LLM_ID`, `TWILIO_PHONE_NUMBER`) absent from all three environments. Verified by CEO. PR #7 merge (2026-05-23T13:12:34Z) closed the code/`.env.example`/`.env.local` portion. Phase 2 and Phase 3 pre-conditions remain pending — Phase 2 has not started.
 
 Bring-up steps (Builder owns; CEO does the test call):
 

@@ -716,6 +716,7 @@ Executed ADR-008's three-layer naming convention across the repo. The execution 
 ### What's open for next session
 
 - **Vercel dashboard work for the rename sweep.** For each of Production / Preview / Development: (a) create new variable names with the same values where the old names exist, (b) delete the old names. Spec'd as a checklist in this PR's body. The PR does not block on Vercel — CEO completes the dashboard work and merges. This also stacks with the Vercel Preview/Development Supabase env-var configuration that PR #5 surfaced and was not completed at PR #5 merge time — both should be applied before the renamed environment is expected to build cleanly.
+  - **Status (appended 2026-05-23):** Vercel dashboard renames completed by CEO mid-session before PR #7 merged. Item closed.
 - **PR #5 (Phase 1 repo hygiene) — MERGED (2026-05-23T03:25:57Z).** No longer open. The `.env.example` it created used the pre-rename names; this PR's rebase reconciliation updates that file to the post-ADR-008 shape.
 - **PR #6 (Phase 1.5 Claire decommission) — MERGED (2026-05-23T04:00:41Z).** No longer open. ADR-002's full decommission commitment is closed (per Phase 1.5 status appendage under ADR-002 in DECISIONS.md).
 - **ADR-003 Phase 4 redraft** (Pending follow-up #1) is the natural next executable step. Inputs: this PR's canonical names (e.g., `AMP_AGENT_DEFAULT_V1`); the operating principle; Session 007 + 009 narrative.
@@ -760,6 +761,7 @@ Morning status check confirmed PR #7 OPEN at that moment, working tree clean, ma
 
 - **CEO review of the redraft.** Before any Phase 2 or Phase 4 execution begins. The redraft section under ADR-003 in DECISIONS.md is the artifact.
 - **PR #7 (rename sweep per ADR-008) — MERGED 2026-05-23T13:12:34Z (during this session, after the redraft commit was prepared).** Env var names are now canonical on main. The remaining PR-#7-adjacent work is the Vercel dashboard rename per the PR #7 body checklist; still pending CEO execution.
+  - **Status (appended 2026-05-23):** Vercel dashboard renames completed by CEO mid-session before PR #7 merged. Item closed.
 - **Pending follow-up #1 (Phase 4 redraft)** — this redraft itself is the deliverable. After CEO approval, follow-up #1 closes and execution proceeds.
 - **Pending follow-up #2 (dead-ID propagation)** — closed in this commit.
 - **Pending follow-up #3 (rename sweep)** — CLOSED (PR #7 merged this session).
@@ -778,3 +780,41 @@ None. The redraft is docs-only; no secrets handled; no destructive actions taken
 - **The CTO/CSO/COO C-suite review notes are inline in the redraft section** (per Constitution §7). If a future session disagrees with any of the resolutions there, a Section 9 amendment is required — not a silent override.
 - **Phase 4 prerequisite of PR #7 merged is now satisfied** (merged during this session at 13:12:34Z). The bring-up sequence's reference to `AMP_AGENT_DEFAULT_V1` is honored by the live `main`.
 - **Mid-session PR merge as a coordination failure mode.** The push-rejected-rebase-resolve loop in this session is the same shape as Session 010's "PR #7 branched from stale main" loop — both come from making forward-looking claims about a remote-state branch without re-fetching at the moment of action. The discipline going forward: `git fetch origin` immediately before any `git push` to `main`, and immediately before any cross-PR coordination claim in a PR body or commit message. Both Session 010 and Session 011 confirm the pattern; if it recurs in Session 012+ a formal tripwire is warranted.
+
+---
+
+## Session 012 — Close Claire loose ends (Vercel staleness correction + ClaireAi Supabase deleted)
+**Date:** 2026-05-23 (afternoon)
+**Duration:** ~15 minutes (verify Supabase MCP deletion + six docs edits + commit)
+**Participants:** Architect (Claude), CEO (Josh)
+
+### What happened
+
+Two small cleanup items shipped in one commit. CEO did the Vercel dashboard rename earlier this session (before PR #7 merged) but the Session 010 and Session 011 SESSION_LOG entries plus the ADR-003 redraft were written claiming "Vercel pending" — that staleness is corrected here with Status sub-bullets. CEO also decided to delete the paused Supabase project `mnsclowesetxpwpukohx` ("ClaireAi") that had been queued as the last Claire-adjacent cleanup since Session 007.
+
+**Supabase deletion sequencing.** The Architect halted the destructive action when ToolSearch confirmed the Supabase MCP does not expose a project-delete tool (only `pause_project` / `restore_project`; no `delete_project`). The MCP gap was surfaced honestly; three alternative paths proposed (CEO dashboard delete, Supabase Management API with a PAT, Supabase CLI authentication). CEO chose path 1 (dashboard delete) and executed it. Architect verified post-deletion via `list_projects` MCP: `mnsclowesetxpwpukohx` is absent from the org. The org `Josh's projects` now contains exactly three projects (AMP, FinderHub-v2, combinecrush — none Claire-related).
+
+### What got decided
+
+- **Vercel-pending staleness fix landed.** Three surfaces corrected with Status sub-bullets: SESSION_LOG.md Session 010 "What's open," SESSION_LOG.md Session 011 "What's open," and DECISIONS.md ADR-003 redraft Pre-conditions block. No historical entries were rewritten; all updates follow the established append-a-Status-note convention.
+- **ClaireAi Supabase project deleted.** Reasoning recorded in the new Session 012 Status note under ADR-002: Claire is dead per the operating principle (ADR-007); the project was paused with no active services; restoring it for a snapshot adds zero value; the schema differences between Claire's old shape and AMP's canonical shape make partial restore worse than starting clean.
+- **ADR-002 is fully closed.** All four decommission targets are now executed: Retell (Session 009), Twilio SIP trunk (Session 009), Vercel `claire-ai-beta` (confirmed pre-audit, Session 009), Supabase ClaireAi (Session 012, this commit). The new Session 012 Status note under ADR-002 records the full closure.
+- **ADR-008 separate-commit guideline: deliberate deviation noted.** The two concerns (Vercel staleness + Supabase deletion) share a single theme (final Claire cleanup post PR #7) and their docs updates are intertwined. One commit with a clear multi-line message preserves narrative coherence; commit message footer names the deviation explicitly per ADR-008 §enforcement.
+
+### What's open for next session
+
+- **Phase 2 execution.** The next executable step per the ADR-003 Phase 2 + Phase 4 redraft. Architect produces `supabase/migrations/0000_initial_schema.sql`; Builder applies it. Pre-conditions are satisfied except Phase 2 itself (the migration doesn't exist yet) and Phase 3 (code references to canonical table names + webhook to `/v1/`). Pick up in a fresh session.
+- **PROJECT_INVENTORY.md observation:** the file does NOT reference the ClaireAi Supabase project by name (`mnsclowesetxpwpukohx`); the only `claireai`-substring mentions in the file are about the now-deleted Twilio SIP domain `claireai.pstn.twilio.com`, which were already annotated in PROJECT_INVENTORY item #16 by PR #6 (Phase 1.5). No additional PROJECT_INVENTORY.md edit needed for the Supabase deletion. Surfaced here for the next reader so they don't go looking for an edit that didn't need to happen.
+
+### Tripwires fired
+
+None. T-006/T-007/T-008 held: no secret values handled, no broad git staging. The Supabase MCP project-delete gap was surfaced before any destructive substitution; CEO did the deletion via dashboard.
+
+### Constitution version at session start: v1.3
+### Constitution version at session end: v1.3 (no amendment)
+
+### Notes for future-Claude
+
+- **The Supabase MCP project-delete gap is real and worth remembering.** When a project deletion is needed, the MCP path is closed; CEO dashboard, Supabase Management API with a PAT, or authenticated CLI are the three viable substitutes. None can be silently chosen — destructive actions require explicit CEO authorization of the path.
+- **The "mid-session merge / mid-session dashboard work" coordination failure mode keeps appearing.** Session 010 (PR #7 branched from stale main), Session 011 (PR #7 merged while my redraft commit was prepared), Session 012 (Vercel dashboard work that landed mid-session was not propagated to my docs claims). Three instances in three sessions is enough of a pattern to warrant explicit discipline: re-verify remote state via `gh pr list` / `git fetch` / Supabase MCP `list_projects` / a direct CEO confirmation before any docs claim about that state. If the pattern recurs in Session 013, the right move is a formal tripwire (T-008-adjacent: "claims about external state require fresh verification in the same response").
+- **All Claire-era infrastructure is now genuinely gone.** Retell (deleted Session 009), Twilio SIP trunk (deleted Session 009), Twilio number `+12494448711` (preserved with `trunk_sid: null`; Phase 4 brings up the call path), Vercel `claire-ai-beta` (gone pre-audit), Supabase `ClaireAi` (deleted this session). The repo's references to Claire are all historical narrative or operating-principle citations — there is no live Claire resource to point at anymore.
