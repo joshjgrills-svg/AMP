@@ -667,3 +667,56 @@ None. T-006 / T-007 / T-008 / T-104 all held. **Positive example of "verify befo
 - **Five sessions on 2026-05-23 (011, 012, 013, 014, 015) is the cluster.** Phase 4 re-execution needs a fresh session — the redraft amendment is non-trivial drafting work, and the new Step 2 spec depends on which option CEO picks. Don't try to roll the amendment + new spec + execution into a sixth in-day session.
 - **The Phase 4 Status appendage in DECISIONS.md is now multi-paragraph.** Three Status notes under the Phase 4 pre-conditions block (Session 012, Session 014, Session 015). Future amendments should land at the same location to keep the audit trail dense. When the next Phase 4 attempt lands, its Status appendage references this one as the prerequisite-amendment commit.
 - **SESSION_LOG archive event.** Session 004 archived this session to `docs/archive/session-log/2026-05.md`. Next archive event triggers when Session 005 rolls off (after Session 016 lands).
+
+---
+
+## Session 016 — Phase 4 routing milestone (AMP answered first real calls) + persistence gap to diagnose
+**Date:** 2026-05-23 (late evening)
+**Duration:** ~2 hours
+**Participants:** Architect/Builder (Claude), CEO (Josh)
+
+### What shipped this session
+
+- **ADR-003 Phase 4 redraft amendment** (commit `215c3c7`) — SIP routing restored.
+- **Twilio Elastic SIP Trunk "AMP"** (`TKffaa1aad30ca6d7283688c37a1e5bbed`) live with `amp-v1.pstn.twilio.com` termination and `sip:sip.retellai.com` origination.
+- **Retell phone number `+12494448711` imported**, bound to canonical agent `agent_0e211c256211ef2ead23cc8375` via the SIP trunk. Claire-era global lock cleared by CEO via Retell dashboard delete.
+- **Supabase seed:** customer `fdbcf217-259a-4302-9a3c-d87697ee4b87`, agent_template `332a028b-8232-4c37-86e3-9846b60c0225`, agent `db405a78-be4a-496c-ae49-199abc352cef`. All three FKs resolve.
+- **MILESTONE:** AMP answered two real inbound calls. Voice routing works end-to-end (PSTN → Twilio → SIP trunk → Retell → AMP agent).
+
+### Verification gap carried to next session
+
+- Two test calls placed, zero rows in `conversations` table.
+- First call: explained by empty `agents` table (handler returned `200 ignored: unknown_agent`). Seeded after.
+- Second call: agents lookup now resolves cleanly, but `conversations` still empty. This is a DIFFERENT failure mode than the first.
+- Three known candidate causes, in rough likelihood order:
+  1. **Vercel deploy lag** — synthetic POST to `/v1` returned 401 earlier in session (live then). Worth re-confirming next session.
+  2. **Signature verification failure** — `RETELL_API_KEY` in Vercel env vars vs. the API key Retell uses to sign webhooks. If they mismatch every event returns 401 and the handler exits before insert.
+  3. **Runtime error after agent lookup** — possible column-shape mismatch the Phase 3 audit didn't catch. Webhook signature check passes, agent lookup resolves, but insert into `conversations` throws.
+- **Diagnostic for next session:** Vercel logs filtered to `/api/webhooks/retell/v1` for the test call timeframe. Look for POST event count (0 / 1 / 2 / 3) and response codes. That single data point isolates the cause.
+
+### State at session close
+
+- `main` at `215c3c7`. No code commits this session (Phase 4 was infrastructure + seed only).
+- Working tree clean.
+- Twilio: SIP trunk live, number bound on Retell side.
+- Retell: phone number bound to canonical agent, agent published with canonical webhook URL.
+- Supabase: schema in place, seed rows present, `conversations` empty.
+- Vercel: `/v1` endpoint live per earlier session probe.
+
+### What's open for next session
+
+- Pull Vercel logs for the test call timeframe (~22:30 ET ish).
+- Diagnose which of the three candidate causes is actual.
+- Fix, re-test, verify `conversations` row lands.
+- Then Phase 4 truly closes. Phase 5 (scripts reconciliation + voice/prompt tuning) becomes next.
+
+### Claire-era residual learned
+
+`docs/PHASE_1_5_AUDIT.md` should be amended next session with a "Retell phone-number registrations" check requirement for future cleanup audits. The `+12494448711` Retell record survived Phase 1.5 and required CEO dashboard delete to release the global lock that initially blocked Phase 4.
+
+### Tripwires fired
+
+None. T-006 / T-007 / T-008 / T-104 held throughout. Spec discipline held against six hours of cluster-day fatigue across 4 sessions.
+
+### Constitution version at session start: v1.3
+### Constitution version at session end: v1.3 (no amendment)
