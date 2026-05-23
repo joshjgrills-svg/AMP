@@ -1,9 +1,9 @@
 # AMP — Technical Constitution
 
-**Version:** v1.2
+**Version:** v1.3
 **Author:** Senior Lead Architect (with C-suite review)
 **Last updated:** 2026-05-23
-**Supersedes:** v1.1 (2026-05-17; amended per ADR-007 to add Section 7.6 — auto-memory store discipline: the Claude Code auto-memory store is a cache of `docs/`, not a separate documentation system). v1 (2026-05-12; amended per ADR-005 to add Section 7.5 — documentation-only changes may commit directly to main without a pull request).
+**Supersedes:** v1.2 (2026-05-23; amended per ADR-008 to extend Section 1.3 — naming conventions for environment variables, code identifiers, file paths, and display names are governed by the three-layer naming system in ADR-008). v1.1 (2026-05-17; amended per ADR-007 to add Section 7.6 — auto-memory store discipline: the Claude Code auto-memory store is a cache of `docs/`, not a separate documentation system). v1 (2026-05-12; amended per ADR-005 to add Section 7.5 — documentation-only changes may commit directly to main without a pull request).
 **Status:** This document is policy, not suggestion. Once ratified, the agent team enforces it without exception. Changes require explicit amendment via the procedure in Section 9.
 **Next review:** Quarterly, or upon any architectural inflection point
 
@@ -67,6 +67,8 @@ These names are decided and never change:
 - **Handoff** — the act of one agent transferring a conversation to another agent. The variable name is `handoff`. The table is `handoffs`.
 
 If a future feature creates ambiguity, we add a new term — we do not overload an existing term.
+
+Naming conventions for environment variables, code identifiers, file paths, and display names are governed by ADR-008. Section 1.3's locked domain terms (customer, agent, conversation, appointment) are the Layer 1 vocabulary; ADR-008 extends this to the broader naming system.
 
 ### 1.4 What the agents check on every database PR
 

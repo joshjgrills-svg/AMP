@@ -588,3 +588,14 @@ This is a material restructuring — ADR-003 may go from 7 phases to 5 or 6, and
 1. **ADR-003 Phase 4 redraft — reframe from cutover to bring-up.** Architect to handle in a session after Phase 3 completes. Inputs: this Session 007 entry (drift investigation + reframe sub-entries); the operating principle "Claire is dead, AMP is fresh build"; the Phase 2 / Phase 4 collapse question flagged above; ADR-002 line 98 (data is throwaway). Output: revised ADR-003 phase plan recorded in DECISIONS.md as an ADR-003 amendment per Constitution Section 9.
 
 2. **Update `docs/PROJECT_INVENTORY.md` and `docs/DECISIONS.md` (ADR-002, ADR-003) to reflect live agent/LLM IDs.** Currently both reference the dead `agent_58fbaa9f9eb2e1f6698e54bedd` and `llm_2387332d2303961cb4d67d815d9e`. Fold into the ADR-003 Phase 4 redraft commit rather than patching standalone.
+
+3. **RENAME SWEEP — apply ADR-008 naming convention to existing identifiers.** (Appended 2026-05-23, Session 008.) Scope:
+
+   - `AMP_PLUMBER_AGENT_ID` → `AMP_AGENT_DEFAULT_V1`
+   - `AMP_PLUMBER_LLM_ID` → `AMP_LLM_DEFAULT_V1` (or delete if confirmed unused)
+   - `TWILIO_PHONE_NUMBER` → `AMP_PHONE_NUMBER` (it is our number, Twilio is the provider — Layer 1, not Layer 2)
+   - Audit for any other identifiers that pre-date ADR-008 and conflict with the convention.
+
+   Sweep covers: `.env.local`, `.env.example`, Vercel env vars across Production / Preview / Development, all code references, all docs that mention the variable names, Retell agent metadata fields if applicable. Confirm full scope with grep before executing.
+
+   Timing: execute after ADR-003 Phase 1.5 (Claire decommission) and before ADR-003 Phase 4 (bring-up). Phase 4 references whatever the canonical names are at that point. One focused session.

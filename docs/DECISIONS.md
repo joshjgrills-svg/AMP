@@ -995,3 +995,142 @@ The Session 008 audit confirming zero current drift is the inaugural exercise of
 - Constitution Section 7.3 (the canonical in-repo state documents)
 - Constitution Section 9 (the amendment procedure followed to land this change)
 - Session 008 audit (performed 2026-05-23; result: zero auto-memory-only content across all four files at the time of audit)
+
+---
+
+## ADR-008 — Naming Convention for AMP (Three Layers)
+
+**Date:** 2026-05-23
+**Status:** Accepted
+**Decided by:** CEO (Josh), drafted by the Architect
+**Supersedes:** None (extends Constitution §1.3 locked domain terms into a broader naming system; bumps Constitution v1.2 → v1.3)
+**Superseded by:** None
+
+### Context
+
+Constitution §1.3 locks the eight domain terms that AMP uses for entities (customer, agent, agent_type, conversation, end-user, subscription, workspace, handoff). It is silent on the broader naming surface: environment variables, vendor credentials, app-level configuration, file paths, display names, branch names, PR titles, sub-agent names, slash command names. Without an explicit convention, names accrete in whatever shape the first commit happens to use, drift over time, and force later sessions to choose between rename sweeps (expensive) or living with inconsistency (foundation-corroding in the ProScore pattern).
+
+Two specific drift incidents motivate this ADR:
+
+1. **Session 007 Retell agent rename.** The live agent was named "AMP Plumber - Default" — a singular vertical ("Plumber") at a position in the namespace that will hold many verticals (per ADR-004 amendment: Plumbing + Electrical + HVAC; Roofing fast-follow). Session 007 renamed the agent to "AMP - Plumbing - V1," making vertical, intent, and version legible. But the env-var names (`AMP_PLUMBER_AGENT_ID`, `AMP_PLUMBER_LLM_ID`) still encode "Plumber" as a singular noun in AMP's identifier namespace, and `.env.local` still uses that shape.
+
+2. **Mixed prefixing in `.env.local`.** Today the file contains both `AMP_PLUMBER_*` (AMP-owned identifier) and `TWILIO_PHONE_NUMBER` (which encodes AMP's own phone number under a vendor prefix as if Twilio issued it to us — it is in fact our number; Twilio is the provider). This mixed posture is benign at one variable but is the failure mode that will compound as the env-var surface grows.
+
+The convention this ADR establishes is meta — it governs the names of names. Once locked, the Architect's plans, the Builder's commits, the Reviewer's audits, and every future ADR all enforce it.
+
+### Decision
+
+**The Convention — three layers.**
+
+**Layer 1. Things that belong to AMP** (agents, customers, conversations, test resources, internal IDs).
+
+- Format: `AMP_<THING>_<MODIFIER>_<VERSION>`
+- Examples:
+  - `AMP_AGENT_DEFAULT_V1`
+  - `AMP_LLM_DEFAULT_V1`
+  - `AMP_TEST_ORG_ID`
+  - `AMP_PHONE_NUMBER`
+
+**Layer 2. Vendor credentials** (API keys, tokens, secrets the vendor issued to us).
+
+- Format: `<VENDOR>_<CREDENTIAL>`
+- No `AMP_` prefix. These live in the vendor's namespace, not ours.
+- Examples:
+  - `RETELL_API_KEY`
+  - `TWILIO_AUTH_TOKEN`
+  - `TWILIO_ACCOUNT_SID`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `ANTHROPIC_API_KEY`
+
+**Layer 3. App-level configuration** (URLs, public keys, environment switches).
+
+- Format: `AMP_<CONFIG>` or framework-required (e.g., `NEXT_PUBLIC_*` for browser-exposed Next.js values).
+- Examples:
+  - `NEXT_PUBLIC_APP_URL`
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+**Decision rule — which layer does a name belong in?**
+
+Ask: is this a credential the vendor issued me, or is it an ID inside my own system?
+
+- Vendor-issued credential → Layer 2.
+- AMP's own identifier or resource → Layer 1.
+- Application config or framework-required name → Layer 3.
+
+**Enforcement — guideline-strength.**
+
+- Default: every new name conforms to the convention.
+- Deviation allowed when justified in a code comment or commit message explaining why the convention does not fit.
+- Reviewer sub-agent must flag any non-conforming name in a PR and either accept the written justification or request a rename.
+- Exceptions multiply silently if no justification is required, so the justification step is mandatory even when the deviation is small.
+
+**Scope — what the convention governs.**
+
+1. Environment variable names (`.env.local`, `.env.example`, Vercel env vars).
+2. Database table names, column names, enum values (extends Constitution Section 1.3 locked terms).
+3. Code file and folder names (`lib/integrations/<vendor>/` for Layer 2 adapters, `lib/agents/` and `lib/customers/` for Layer 1 domain code).
+4. Document filenames (`docs/scout/YYYY-MM-DD_topic.md`, `docs/DECISIONS.md`, etc. — date-first when applicable).
+5. Retell agent and LLM display names (e.g., "AMP - Plumbing - V1" — vertical name is descriptive content, not a variable name violation).
+6. Sub-agent names in `.claude/agents/` and slash command names in `.claude/commands/`.
+7. Branch names (`session-NNN-<topic>` or `phase-N-<topic>`).
+8. PR titles, commit message conventions.
+
+### Alternatives considered
+
+**Option B: Defer the convention until the first vertical-multiplication forces it.** Rejected. ADR-004 amendment already commits AMP to plumbing + electrical + HVAC + roofing as parallel verticals; the singular "Plumber" in env vars is already obsolete. Deferring means the rename sweep grows by every variable added between now and the trigger, and the convention itself drifts further from "decide once" in the meantime.
+
+**Option C: Single global prefix for everything (`AMP_*` for all variables including vendor credentials).** Rejected. Erases the conceptual boundary between "what the vendor issued to me" and "what I named." A future engineer reading `AMP_RETELL_API_KEY` cannot tell at a glance whether AMP minted that key or Retell did. The convention rule that "vendor names belong to vendors" preserves the audit boundary and is consistent with ADR-001 (AMP owns orchestration; vendors own their own surfaces).
+
+**Option D: Strict enforcement with CI-level rejection of non-conforming names.** Rejected as premature. Constitution §8 ("No frameworks added to solve a problem that doesn't exist yet") applies. Reviewer-flagged-with-mandatory-justification gives 95% of the benefit at zero infrastructure cost. If the discipline degrades, a later ADR can codify CI enforcement.
+
+**Option E: Use the convention only for env vars and leave the rest alone.** Rejected. The drift cost is structural; bounding the convention to env vars leaves seven other naming surfaces uncovered (table/column names, file paths, display names, sub-agent names, branch names, PR titles, commit messages). The convention is meta exactly because it must apply to all surfaces uniformly to be load-bearing.
+
+### Reasoning
+
+1. **Vendor names belong to vendors.** A credential `RETELL_API_KEY` is owned by Retell — they issued it. An identifier `AMP_AGENT_DEFAULT_V1` is owned by AMP — we minted it. Encoding that ownership in the prefix makes the namespace audit boundary mechanical instead of conceptual. This is consistent with ADR-001 (AMP owns the orchestration brain; vendor surfaces remain vendor surfaces).
+
+2. **"Plumber" as a singular noun is wrong at the prefix slot.** Per ADR-004 amendment (2026-05-22), AMP's vertical scope is Plumbing + Electrical + HVAC + Roofing (fast-follow). Encoding a single vertical as a noun in AMP's identifier namespace (`AMP_PLUMBER_*`) is the kind of foundation-locking decision that costs weeks to undo later. The Session 007 Retell display name rename ("AMP - Plumbing - V1") already established the right shape: vertical as a descriptive modifier, not as a noun at the prefix slot.
+
+3. **Three layers maps to a real distinction in the codebase.** `lib/integrations/<vendor>/` already exists as a Constitution §3.2 mandate; `lib/agents/` and `lib/customers/` will exist when the orchestration layer is built (Constitution §10.1). The three-layer naming convention falls out of the three-layer code architecture — they are the same partition.
+
+4. **Guideline-strength enforcement with mandatory justification is the right default.** Strict enforcement creates fights over edge cases; no enforcement is no convention. Requiring a written reason for any deviation forces the deviation through conscious thought and into the git record, where it can be reviewed when the convention is next revised.
+
+### Trade-offs accepted
+
+- **Existing names that do not conform must be renamed.** Mitigation: the rename sweep is scoped, queued, and timed (see Pending follow-up appended to SESSION_LOG.md in the same commit as this ADR). It is one focused session, not an ongoing migration.
+- **`NEXT_PUBLIC_*` framework names break the Layer 3 `AMP_<CONFIG>` shape.** Acceptable: the framework requires the `NEXT_PUBLIC_` prefix for browser-exposed values, and overriding the framework convention for purity is the kind of low-value rigidity Constitution §8 prohibits. Layer 3 explicitly allows framework-required names.
+- **The Reviewer must hold the line on the justification step.** Without it, the convention degrades to "whatever shape the first commit happened to use" within a quarter. Mitigation: the Reviewer's job description (`.claude/agents/reviewer.md`) gets a checklist line on the next pass, and any non-conforming name in a PR without a written justification is grounds for refusal.
+
+### What would change this decision
+
+We would revisit ADR-008 if:
+
+1. The three-layer split itself proves wrong — for example, a fourth load-bearing category emerges (today: AMP-owned, vendor-issued, app config; tomorrow: ?).
+2. A future ADR formally restructures AMP into multiple repos or multiple Vercel projects, in which case the convention may need a project-scope dimension that today's single-repo posture does not have.
+3. Strict CI-level enforcement becomes worth the infrastructure cost — e.g., after multiple rename sweeps motivated by guideline-strength enforcement failing in practice.
+4. A vendor name itself collides with an AMP name in a way the prefix rule cannot disambiguate.
+
+### Constitutional impact
+
+Constitution §1.3 is extended to reference this ADR. Section 1.3's locked domain terms (customer, agent, conversation, etc.) are the Layer 1 vocabulary; this ADR governs the broader naming system that surrounds them. Constitution version bumped v1.2 → v1.3 in the same commit as this ADR.
+
+### Implementation implications
+
+This amendment touches:
+
+- `docs/DECISIONS.md` — this ADR appended
+- `docs/CONSTITUTION.md` — §1.3 updated with a reference sentence; version bumped v1.2 → v1.3
+- `docs/SESSION_LOG.md` — Pending follow-up appended for the rename sweep
+
+All three files are under `docs/`, so this amendment commits direct-to-main as a single docs-only commit per Section 7.5.
+
+The rename sweep itself is NOT executed in this commit. The sweep touches code (`.env.local` is local-only but `.env.example` is committed; code references inside `lib/`, `app/`, `scripts/`), Vercel env vars, and Retell agent metadata — none of which fall under the §7.5 carve-out. The sweep is its own session, queued in SESSION_LOG.md and scheduled to run after ADR-003 Phase 1.5 (Claire decommission) and before ADR-003 Phase 4 (bring-up).
+
+### References
+
+- Constitution §1.3 (locked domain terms — the Layer 1 vocabulary this ADR extends)
+- ADR-001 (AMP owns orchestration — vendor names belong to vendors, not AMP — the reasoning behind the Layer 2 / Layer 1 split)
+- ADR-004 amendment (2026-05-22) — Plumbing + Electrical + HVAC as parallel verticals; the ADR that obsoletes "Plumber" as a singular noun in the prefix slot
+- Session 007 (2026-05-22) — Retell agent rename from "AMP Plumber - Default" to "AMP - Plumbing - V1"; the inaugural exercise of the convention before the convention was written down
+- Constitution Section 9 (the amendment procedure followed to land this change)
