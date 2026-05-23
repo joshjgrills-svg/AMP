@@ -920,3 +920,78 @@ This placeholder would be revised if:
 - Constitution §2.1 (monorepo structure — the source of this requirement)
 - ADR-003 (the cleanup plan that deferred this restructure and created this placeholder)
 - `docs/PROJECT_INVENTORY.md` item #5 (HIGH compliance issue: flat repo violates §2.1)
+
+---
+
+## ADR-007 — Constitutional Amendment: Auto-Memory Store Discipline (Cache, Not Source of Truth)
+
+**Date:** 2026-05-23
+**Status:** Accepted
+**Decided by:** CEO (Josh) directly, on the basis of the Session 008 status check audit
+**Supersedes:** None (amends Constitution v1.1 → v1.2, adding Section 7.6)
+**Superseded by:** None
+
+### Context
+
+Claude Code maintains a file-based auto-memory store at `/home/codespace/.claude/projects/-workspaces-amp/memory/`, outside the repo. The harness auto-loads `MEMORY.md` (the index) into every conversation's system context; individual memory files are read on demand. As of Session 008 the store contains four files: `MEMORY.md`, `adr_status.md`, `claire-is-dead.md`, and `claude-for-small-business.md`.
+
+Session 008 surfaced a latent governance question: what is the relationship between this external store and the in-repo `docs/` system? Left undefined, the store can drift in either of two directions: (a) become a parallel knowledge base where principles, decisions, and project facts originate outside the repo and never get promoted in — a foundation-corroding pattern of the kind ProScore paid for, recurring in a new medium; or (b) become a stale snapshot the agent over-trusts when the repo has moved on, undermining the "the repo is the source of truth" discipline Constitution Section 7.3 already establishes for state documents.
+
+The audit performed in Session 008 (covering all four current memory files against `docs/DECISIONS.md`, `docs/SESSION_LOG.md`, `docs/CONSTITUTION.md`, and `docs/scout/`) found zero auto-memory-only content. The store is functioning correctly as a cache today. This ADR formalizes that posture so the discipline does not depend on every future Session catching the drift in audit.
+
+### Decision
+
+Amend Constitution v1.1 to v1.2 by adding Section 7.6 ("Auto-memory store discipline"). The rule:
+
+- The auto-memory store is allowed to mirror or summarize content from `docs/` for fast context loading.
+- The auto-memory store is NOT a separate documentation system.
+- Any operating principle, decision, or project fact that exists only in auto-memory and not in `docs/` is a drift bug to fix immediately by promoting the content into the relevant repo file (`DECISIONS.md`, `SESSION_LOG.md`, `CONSTITUTION.md`, or `TRIPWIRES.md`, as appropriate).
+- The repo is the source of truth. Auto-memory is the cache. When the two disagree, the repo wins.
+- New knowledge is written into `docs/` first; the auto-memory entry, if any, is a follow-on summary with a pointer back to the canonical source.
+
+### Alternatives considered
+
+**Option B: Treat auto-memory as a peer documentation system with its own scope.** Rejected. Two parallel doc systems means two places to keep in sync, two places to audit, and inevitable divergence. Constitution Section 7.3 already names the seven in-repo state documents as the canonical set; adding an off-repo eighth doc surface would silently weaken that.
+
+**Option C: Ban auto-memory entirely.** Rejected. The store demonstrably saves context-loading time on every session start — `MEMORY.md` index auto-loads into system context, and three of the four current entries (`adr_status.md`, `claire-is-dead.md`, `claude-for-small-business.md`) compress multi-page repo content into a paragraph the agent can act on immediately. The cost of re-deriving that compression every session, from a docs tree that will only grow, is real. Cache-with-discipline beats no-cache.
+
+**Option D: Allow auto-memory-only operating principles for "personal" or "session-scoped" notes.** Rejected. The category is undefined and self-expanding. Any principle the agent applies to future decisions is by definition load-bearing; "personal" is a backdoor that erases the audit boundary the rest of the Constitution depends on.
+
+### Reasoning
+
+1. **The "repo is source of truth" posture is non-negotiable for a system that depends on the next agent picking up coherent state.** Section 7.3 names the canonical documents; this amendment closes the off-repo loophole.
+2. **Caches are useful; un-disciplined caches are foundation-corroding.** The pattern is identical to the ProScore lesson about hardcoded values and undocumented conventions — small, harmless-looking off-repo state that the team starts to rely on, that no one promotes back into the canonical record, and that diverges silently over months until the only authoritative source is whatever's loaded into someone's head.
+3. **The audit in Session 008 was clean.** Formalizing the rule now, while there is zero drift, is cheap. Doing it after the first drift incident would mean recovering content from out-of-repo state under pressure — exactly the recovery work the Constitution exists to prevent.
+4. **Memory entry expiration is now well-defined.** A memory entry that points at content removed from `docs/` is by definition stale and should be removed or updated. A memory entry that contains new content not in `docs/` is by definition a drift bug. Both states are mechanically detectable by future audits.
+
+### Trade-offs accepted
+
+- **The agent gives up the ability to record principles in memory-only form.** Mitigation: this is the point of the rule. Any principle worth applying is worth writing into `docs/`.
+- **Memory authoring becomes a two-step write (docs first, then memory).** Mitigation: in practice the agent already writes the docs change as part of session work; the memory entry is a summary, not a duplicate authoring effort. The marginal cost is small.
+- **Audits become a recurring operation.** Mitigation: built into `/session-start` and `/session-end` over time as a checklist item if drift recurs; for now, an on-demand audit (like the one performed in Session 008) suffices. If drift becomes a pattern, a follow-on ADR can codify the audit as a structural step.
+
+### What would change this decision
+
+We would revisit ADR-007 if:
+
+1. The auto-memory mechanism itself materially changes (Anthropic ships a different memory model that, e.g., is no longer file-based or is no longer agent-visible the way it is today).
+2. A genuine, repeatable category of "memory-only" content emerges that adds value without compromising the source-of-truth posture — e.g., transient per-session context that genuinely cannot live in `docs/`. The current four files do not exhibit this category.
+3. Operating multiple agents (per Section 7.1) creates per-agent memory stores whose interaction with the shared repo needs explicit governance beyond what this rule provides.
+
+### Implementation implications
+
+This amendment touches:
+
+- `docs/CONSTITUTION.md` — version bumped to v1.2, Section 7.6 added
+- `docs/DECISIONS.md` — this ADR appended
+
+Both files are under `docs/`, so this amendment is itself eligible for the Section 7.5 documentation-only carve-out and commits direct-to-main as a single docs-only commit.
+
+The Session 008 audit confirming zero current drift is the inaugural exercise of the rule, performed before the rule landed. Future audits — whether on-demand, on session-start, or on session-end — follow the same shape: enumerate the memory files, confirm each claim is represented in `docs/`, promote anything that is not.
+
+### References
+
+- Constitution v1.2, Section 7.6 (the rule this ADR establishes)
+- Constitution Section 7.3 (the canonical in-repo state documents)
+- Constitution Section 9 (the amendment procedure followed to land this change)
+- Session 008 audit (performed 2026-05-23; result: zero auto-memory-only content across all four files at the time of audit)

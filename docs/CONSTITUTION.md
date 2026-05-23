@@ -1,9 +1,9 @@
 # AMP — Technical Constitution
 
-**Version:** v1.1
+**Version:** v1.2
 **Author:** Senior Lead Architect (with C-suite review)
-**Last updated:** 2026-05-17
-**Supersedes:** v1 (2026-05-12; amended per ADR-005 to add Section 7.5 — documentation-only changes may commit directly to main without a pull request)
+**Last updated:** 2026-05-23
+**Supersedes:** v1.1 (2026-05-17; amended per ADR-007 to add Section 7.6 — auto-memory store discipline: the Claude Code auto-memory store is a cache of `docs/`, not a separate documentation system). v1 (2026-05-12; amended per ADR-005 to add Section 7.5 — documentation-only changes may commit directly to main without a pull request).
 **Status:** This document is policy, not suggestion. Once ratified, the agent team enforces it without exception. Changes require explicit amendment via the procedure in Section 9.
 **Next review:** Quarterly, or upon any architectural inflection point
 
@@ -380,6 +380,14 @@ Sessions that produce only `docs/` changes commit those changes directly to `mai
 Constitutional amendments themselves still follow Section 9 (proposal, C-suite review, CEO approval, DECISIONS.md entry, version bump). The carve-out lowers merge friction; it does not lower the amendment bar. A Section 9 amendment that touches only `CONSTITUTION.md` and `DECISIONS.md` may commit directly to `main`; one that also rewires agent files goes through a PR (this is exactly how ADR-005 itself landed).
 
 Amendments to this carve-out require a Constitutional amendment per Section 9.
+
+### 7.6 Auto-memory store discipline
+
+The Claude Code auto-memory store at `/home/codespace/.claude/projects/-workspaces-amp/memory/` is allowed to mirror or summarize content from the in-repo `docs/` system for fast context loading. It is NOT a separate documentation system.
+
+Any operating principle, decision, or project fact that exists only in auto-memory and not in the in-repo docs is a drift bug to fix immediately by promoting the content into the relevant repo file (`DECISIONS.md`, `SESSION_LOG.md`, `CONSTITUTION.md`, or `TRIPWIRES.md`, as appropriate). The repo is the source of truth. Auto-memory is the cache. When the two disagree, the repo wins.
+
+The agent treats auto-memory as a forward-context aid for the next conversation, not as a place where new knowledge originates. New knowledge is written into `docs/` first; the auto-memory entry, if any, is a follow-on summary with a pointer back to the canonical source.
 
 ---
 
