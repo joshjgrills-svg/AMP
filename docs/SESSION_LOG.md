@@ -6,56 +6,6 @@ When this file exceeds 10 entries, the oldest entries are archived to `docs/arch
 
 ---
 
-## Session 002 — Security incident cleanup
-**Date:** 2026-05-15
-**Duration:** ~30 minutes
-**Participants:** Main-thread Claude, CEO (Josh)
-
-### What happened
-- `/session-start` opened the session; orientation surfaced that Session 001's commit `64ef65d` had been blocked by GitHub Push Protection and was sitting locally unpushed.
-- Josh identified the cause: the Architect-generated `docs/PROJECT_INVENTORY.md` from Session 001 reproduced five live secret values it had read from `.env.local` (Retell API key, Twilio auth token, Twilio account SID, Supabase anon key, Supabase service role key). All five were rotated externally before this session began, so the exposed values are dead.
-- `.env.local` confirmed not tracked (gitignored at `.gitignore:34` via `.env*`).
-- Five lines (`docs/PROJECT_INVENTORY.md` lines 160–164) replaced with redacted markers; non-secret env entries (`TWILIO_PHONE_NUMBER`, `NEXT_PUBLIC_APP_URL`, `AMP_PLUMBER_AGENT_ID`, `AMP_PLUMBER_LLM_ID`, `AMP_INTERNAL_TEST_ORG_ID`) preserved.
-- Repo-wide credential-pattern scan against all tracked files came back clean across five patterns (`key_…`, `sk_(live|test)_…`, `pk_(live|test)_…`, `AC[hex]{32}`, `eyJ…` JWTs).
-- First amend attempt (`git add -A`) overreached and pulled in `.claude/settings.local.json` and `scripts/check-calls.ts` — both flagged in Session 001's "let ADR-003 decide" directive. Rolled back via `git rm --cached` + re-amend.
-- `.claude/settings.local.json` added to `.gitignore` so it stops re-appearing in `git status`. `scripts/check-calls.ts` left untracked, fate still deferred to ADR-003.
-- Postmortem appended to Session 001 entry above.
-- Final amended commit `f24c2f5` contains exactly four files: `.gitignore`, `docs/DECISIONS.md` (ADR-002, original Session 001 content), `docs/PROJECT_INVENTORY.md` (scrubbed), `docs/SESSION_LOG.md` (postmortem).
-- Session 001's blocked commit `64ef65d` orphaned in reflog.
-
-### What got decided
-- `.claude/settings.local.json` is per-machine config and gitignored permanently. Recorded in `.gitignore` and the Session 001 postmortem. Not a full ADR — too narrow.
-
-### What got deferred
-- **T-006 and T-007** (the new tripwires this incident exposes) to be drafted next session. Covers: (a) prohibition on reproducing `.env` contents in agent output, and (b) Architect inventory output must redact secret values by default.
-- All Session 001 open items remain open (ADR-003, the wedge ADR, etc.) — this session diverted to incident response and did not advance them.
-
-### What got blocked
-- `git push origin main` from inside the session intercepted by Claude Code's auto-mode guardrail (blocks direct push to default branch). Josh ran the push manually mid-session; `origin/main` is now at `f24c2f5`. The Session 002 entry commit (`07abdc6`, this commit) is the one remaining unpushed at session-end.
-
-### What's open for next session
-- **Verify push landed** on `origin/main` (commit `f24c2f5` on top of `d98c799`, with `64ef65d` orphaned).
-- **Draft T-006 and T-007** in `docs/TRIPWIRES.md` per the Session 001 postmortem follow-up. T-006: prohibit any reproduction of `.env*` contents in agent output. T-007: Architect inventories that read secret-bearing files must redact values by default and emit only key names + presence/rotation status.
-- **ADR-003 (Constitutional cleanup plan)** — still the load-bearing deliverable Session 001 queued.
-- All other Session 001 open items remain open (cleanup-PR strategy decision, cutover window for the destructive rename, NORTH_STAR.md ADR-placeholder numbering refresh).
-
-### What needs Josh
-- Run `git push origin main` once more to land the Session 002 entry commit (`07abdc6`). The rewritten Session 001 commit (`f24c2f5`) is already on the remote.
-- Approve ADR-003 at the start of next session before any cleanup code is touched (carryover from Session 001).
-
-### Tripwires fired
-- **T-004 (Constitution violations)** — retroactively, Session 001's `PROJECT_INVENTORY.md` violated Constitution §4.1 ("Secrets… Never in committed files") and §6.1 ("We do not log… secrets"). The violation was not detected by the agent at write-time; it was caught by GitHub Push Protection at the network boundary. This is the failure mode T-006 and T-007 are designed to prevent.
-
-### Constitution version at session start: v1
-### Constitution version at session end: v1 (no amendments)
-
-### Notes for future-Claude
-The Architect sub-agent has Read access to the working tree and will read `.env.local` if asked to inventory environment configuration. Until T-006 and T-007 are codified, the main thread is the only check against secret reproduction in Architect output. Josh's external rotation of all five exposed secrets is what made this incident recoverable; the next one may not be.
-
-The post-incident commit hash is `f24c2f5`. The blocked, orphaned commit was `64ef65d`. If anyone is reading this and sees `64ef65d` referenced anywhere, it never reached the remote and was rewritten — do not try to recover it; it carries the leak.
-
----
-
 ## Session 003 — ADR-004 wedge decision + T-205 tripwire
 **Date:** 2026-05-17
 **Duration:** ~30 minutes
@@ -710,3 +660,44 @@ None. T-006/T-007/T-008 held: no secret values handled, no broad git staging. Th
 - **The Supabase MCP project-delete gap is real and worth remembering.** When a project deletion is needed, the MCP path is closed; CEO dashboard, Supabase Management API with a PAT, or authenticated CLI are the three viable substitutes. None can be silently chosen — destructive actions require explicit CEO authorization of the path.
 - **The "mid-session merge / mid-session dashboard work" coordination failure mode keeps appearing.** Session 010 (PR #7 branched from stale main), Session 011 (PR #7 merged while my redraft commit was prepared), Session 012 (Vercel dashboard work that landed mid-session was not propagated to my docs claims). Three instances in three sessions is enough of a pattern to warrant explicit discipline: re-verify remote state via `gh pr list` / `git fetch` / Supabase MCP `list_projects` / a direct CEO confirmation before any docs claim about that state. If the pattern recurs in Session 013, the right move is a formal tripwire (T-008-adjacent: "claims about external state require fresh verification in the same response").
 - **All Claire-era infrastructure is now genuinely gone.** Retell (deleted Session 009), Twilio SIP trunk (deleted Session 009), Twilio number `+12494448711` (preserved with `trunk_sid: null`; Phase 4 brings up the call path), Vercel `claire-ai-beta` (gone pre-audit), Supabase `ClaireAi` (deleted this session). The repo's references to Claire are all historical narrative or operating-principle citations — there is no live Claire resource to point at anymore.
+
+---
+
+## Session 013 — Phase 2 execution (canonical schema migration)
+**Date:** 2026-05-23 (afternoon)
+**Duration:** ~1 hour (pre-write audit → migration file → PR → apply → verification → close)
+**Participants:** Architect/Builder (Claude), CEO (Josh)
+
+### What happened
+
+ADR-003 Phase 2 (Redrafted) shipped end-to-end in one session. Pre-write audit against `yxuhjxxbgbuznpoekwpj` confirmed all seven legacy `amp_*` tables were zero-row and enumerated `DROP TABLE … CASCADE` survivors: 2 functions (`amp_set_updated_at`, `rls_auto_enable`) and 10 `amp_*` enum types. The audit also surfaced that `rls_auto_enable()` backs the `ensure_rls` event trigger (`ddl_command_end`) that auto-enables RLS on any new `public` table — already ADR-008-compliant in name and worth preserving as defense-in-depth. CEO approved the full-clean-slate path and produced the execution spec.
+
+Migration `supabase/migrations/0000_initial_schema.sql` (360 lines, single `BEGIN`/`COMMIT`) authored to the spec — drops the seven legacy tables, the ten `amp_*` enums, and `amp_set_updated_at()`; creates `pgcrypto`, the canonical `set_updated_at()`, ten canonical `{table_singular}_{column_singular}_type` enums, and the six Constitution §1.3 tables (`customers`, `agent_templates`, `agents`, `conversations`, `appointments`, `alerts`) with uuid PK, `created_at`/`updated_at` + trigger, RLS enabled, FKs named `{ref}_id` with explicit `ON DELETE`, and inline `idx_{table}_{column(s)}` indexes. `business_hours` and `booking_config` JSONB defaults on `agents` copied verbatim from legacy `supabase/schema.sql` to preserve operational semantics. PR #8 opened, reviewed, approved.
+
+`apply_migration` returned `{"success":true}` against the live project. Five verification queries all PASS — six canonical tables present + zero-row, seven `amp_*` tables absent, `pg_tables.rowsecurity = true` on all six, `pg_policies` count = 0 in `public` (expected per spec), `ensure_rls` event trigger + `rls_auto_enable()` preserved. CEO merged PR #8 at 2026-05-23T18:05:31Z (merge commit `a9815ff`).
+
+### What got decided
+
+- **Two deliberate deviations from the literal spec, Architect-approved and documented in PR #8 body.** (1) Uniqueness via `CREATE UNIQUE INDEX idx_*` rather than inline `UNIQUE` constraints — preserves Constitution §1.1 `idx_{table}_{column(s)}` naming with no duplicate indexes; trade-off is that Phase 3's TypeScript type generation will see unique *indexes* but not unique *constraints* via `information_schema.table_constraints`. (2) RLS allow policies deferred to a follow-on migration once authenticated/anon access patterns become load-bearing — pre-authorized by the ADR-003 redraft itself; default-deny holds today, service-role bypass is the only access path.
+- **Phase 2 / Phase 3 collapse question raised in the redraft is moot.** Phase 2 shipped standalone.
+- **ADR-003 Status appendage landed** in DECISIONS.md under "What is added to Phase 2," recording execution evidence (apply success, all five verifications PASS, merge commit, deviations).
+
+### What's open for next session
+
+- **Phase 3 execution per ADR-003 (Redrafted).** Two surfaces: (a) code references in `app/api/webhooks/retell/route.ts`, `scripts/create-amp-agent.ts`, and `lib/supabase.ts` move from `amp_calls` / `amp_agents` / `amp_organizations` / `amp_templates` / `amp_appointments` / `amp_alerts` to `conversations` / `agents` / `customers` / `agent_templates` / `appointments` / `alerts`; (b) webhook URL moves from `/api/webhooks/retell/` to `/api/webhooks/retell/v1/` per Constitution §3.3. **Until Phase 3 lands, the Retell webhook handler is broken against the live schema** (the legacy table names it still references no longer exist). Phase 4 (bring-up) is blocked until Phase 3 ships.
+- **RLS allow-policy migration.** Becomes load-bearing when authenticated UI reads land. Today's service-role webhook handler bypasses RLS, so this is non-blocking for bring-up — but must ship before any authenticated user surface does.
+- **SESSION_LOG archive event (rolling-10).** Session 002 archived this session to `docs/archive/session-log/2026-05.md`. Next archive event triggers when Session 003 rolls off (after Session 014 lands).
+
+### Tripwires fired
+
+None. T-006 / T-007 / T-008 held — no secret values handled, no broad git staging, no `.env.local` reads. The "claims about external state without verification" failure mode flagged in Session 012's notes-for-future-Claude did **not** recur: every external-state claim this session (Supabase table list, PR #8 merge state, RLS status, policy count, `ensure_rls` event-trigger presence) was verified via fresh MCP query or `gh pr view` in the same response that referenced it.
+
+### Constitution version at session start: v1.3
+### Constitution version at session end: v1.3 (no amendment)
+
+### Notes for future-Claude
+
+- **The `CREATE UNIQUE INDEX` vs inline `UNIQUE` choice is precedent now.** Phase 3's `supabase gen types typescript` will see unique indexes, not unique constraints. If type-level uniqueness semantics matter (e.g., branded TypeScript types), they must come from manual annotations or a `pg_constraint` / `pg_index` query — not from `information_schema.table_constraints`, which won't see these as `UNIQUE`. Surface this to the Phase 3 reviewer before any code generation runs.
+- **The `ensure_rls` event trigger is now load-bearing.** Any new table created in `public` will get RLS auto-enabled at `ddl_command_end`. Belt-and-suspenders with Constitution §1.1's explicit `enable row level security` requirement. A future migration that drops or alters this event trigger should be flagged as T-002-adjacent.
+- **Three sessions on 2026-05-23 (011, 012, 013) is a redraft + cleanup + execution cluster, not a sustainable cadence.** Phase 3 should be its own session on its own day, with a fresh `/session-start` giving Phase 3 the deliberation surface it needs rather than rolling into it from this one.
+- **`apply_migration` against a live project is a one-way door.** The pre-write audit pattern used here (list_tables → policy enum → trigger inventory → CASCADE-survivor enumeration → CEO sign-off → write → review → apply → verify) is the durable shape for any future destructive schema work. Keep it.
