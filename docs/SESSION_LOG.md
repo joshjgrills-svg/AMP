@@ -6,56 +6,6 @@ When this file exceeds 10 entries, the oldest entries are archived to `docs/arch
 
 ---
 
-## Session 003 — ADR-004 wedge decision + T-205 tripwire
-**Date:** 2026-05-17
-**Duration:** ~30 minutes
-**Participants:** Main-thread Claude, CEO (Josh)
-
-### What happened
-- Verified that ADR-004, T-205, and the Scout brief (`docs/scout/2026-05-17_claude-for-small-business.md`) had been drafted in a prior pass and were sitting uncommitted on the stale `session-001-tripwires-followup` branch.
-- Confirmed ADR-004 covers all six commitments Josh specified: (1) wedge = customer-facing channels, voice first; (2) AMP is not a Cowork/CSB plugin; (3) first vertical = home services (HVAC, plumbing, electrical, roofing, GC) with voice agent lead; (4) no horizontal back-office for ≥12 months (re-evaluate 2027-05-17); (5) T-205 predictive tripwire scoped to the customer-facing real-time category boundary; (6) kill-criterion #4 explicitly NOT triggered as of 2026-05-17.
-- Confirmed Anthropic announcement URL (`https://www.anthropic.com/news/claude-for-small-business`) and Scout brief path are both cited in the ADR.
-- Created new branch `session-002-wedge-adr-004` off `origin/main` (which was at `5efad18` — Session 001 follow-up PR #2 had already merged).
-- Staged exactly 3 files by name per T-008 discipline: `docs/DECISIONS.md`, `docs/TRIPWIRES.md`, `docs/scout/2026-05-17_claude-for-small-business.md`. `scripts/check-calls.ts` left untracked — exactly the situation T-008 was created to prevent.
-- Committed (`44a8103`) and pushed.
-- Opened PR #3: https://github.com/joshjgrills-svg/AMP/pull/3
-
-### What got decided
-- **ADR-004** (now committed, awaiting Josh merge): see DECISIONS.md lines 143-228. Vertical wedge, product-category commitment, and 12-month back-office embargo recorded.
-
-### What got deferred
-- **ADR-003 (Constitutional cleanup plan)** — still the load-bearing deliverable; carried over from Sessions 001 and 002.
-- **`scripts/check-calls.ts` fate** (commit or delete) — explicitly deferred to ADR-003. Still untracked.
-- **NORTH_STAR.md placeholder ADR-number refresh** — still stale; the ADR-002 reservation note in DECISIONS.md is the authoritative correction until NORTH_STAR.md is next revised.
-
-### What got blocked
-- Nothing.
-
-### What's open for next session
-- **HIGH PRIORITY — Vercel Preview/Development env vars missing** *(added 2026-05-17 post-close, between Session 003 and Session 004, via the Constitution §7.5 carve-out)*: Every branch and PR deployment fails the Vercel build with `Missing required env var: NEXT_PUBLIC_SUPABASE_URL`. Production has the Supabase vars; Preview and Development do not. **Fix:** add `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to Vercel's Preview and Development environments for the AMP project. Until fixed, the failed Vercel check on PRs is expected noise and does not block merges. Priority: fix early next session so PR checks stop showing false failures.
-- Josh reviews and merges PR #3.
-- ADR-003 (Constitutional cleanup plan) drafted and approved before any cleanup code is touched.
-- All Session 001/002 carryover (cleanup PR strategy, cutover window for the destructive rename, NORTH_STAR.md numbering refresh).
-
-### What needs Josh
-- **Review and merge PR #3**: https://github.com/joshjgrills-svg/AMP/pull/3 (3 files, +247 lines).
-- Approve ADR-003 at the start of next session.
-
-### Tripwires fired
-- **T-008 (preventive)** — the temptation to use `git add -A` to sweep the working tree was avoided by staging the three intended files by name. `scripts/check-calls.ts` correctly stayed out of the commit. The tripwire functioned as designed.
-
-### Constitution version at session start: v1
-### Constitution version at session end: v1 (no amendments)
-
-### Notes for future-Claude
-The branch is `session-002-wedge-adr-004` (Josh's naming) but this is the **third** SESSION_LOG entry — Sessions 000, 001, 002 already exist. The "Session 002" branch and commit naming reflects Josh's view that the 2026-05-15 security-cleanup entry (currently logged as Session 002) was really Session 001 incident response, not a fresh session of new work. The SESSION_LOG stays append-only; the branch name is the historical record. Do not retroactively renumber.
-
-ADR-004 was drafted in a prior pass (already in the working tree before this session opened); this session's role was to (a) verify its content, (b) move it onto a clean branch, (c) commit exactly the intended 3 files, (d) push, (e) open the PR. The drafting work is preserved in the file itself.
-
-`scripts/check-calls.ts` remains untracked at session end. Do not commit it ad hoc; let ADR-003 decide.
-
----
-
 ## Session 004 — Workflow amendment (Constitution v1.1, ADR-005)
 **Date:** 2026-05-17
 **Duration:** ~30 minutes
@@ -701,3 +651,47 @@ None. T-006 / T-007 / T-008 held — no secret values handled, no broad git stag
 - **The `ensure_rls` event trigger is now load-bearing.** Any new table created in `public` will get RLS auto-enabled at `ddl_command_end`. Belt-and-suspenders with Constitution §1.1's explicit `enable row level security` requirement. A future migration that drops or alters this event trigger should be flagged as T-002-adjacent.
 - **Three sessions on 2026-05-23 (011, 012, 013) is a redraft + cleanup + execution cluster, not a sustainable cadence.** Phase 3 should be its own session on its own day, with a fresh `/session-start` giving Phase 3 the deliberation surface it needs rather than rolling into it from this one.
 - **`apply_migration` against a live project is a one-way door.** The pre-write audit pattern used here (list_tables → policy enum → trigger inventory → CASCADE-survivor enumeration → CEO sign-off → write → review → apply → verify) is the durable shape for any future destructive schema work. Keep it.
+
+---
+
+## Session 014 — Phase 3 execution (code references + webhook URL move)
+**Date:** 2026-05-23 (evening)
+**Duration:** ~30 minutes (pre-write audit → 5 file edits → 4 verification gates → PR → CEO merge → close)
+**Participants:** Architect/Builder (Claude), CEO (Josh)
+
+### What happened
+
+Phase 3 per ADR-003 (Redrafted) shipped in one session. Pre-write audit catalogued 16 legacy `amp_*` references across 5 files and surfaced two hidden column-rename obligations beyond the literal table-rename spec: the webhook handler used `organization_id` on `agents` (must become `customer_id`), and `create-amp-agent.ts` carried six non-mechanical column issues including a required `slug` column with no default on the canonical `customers` table. CEO authorized the broader scope and produced the execution spec.
+
+PR #9 contained five surfaces in one commit: (1) webhook handler relocated `app/api/webhooks/retell/route.ts` → `app/api/webhooks/retell/v1/route.ts` via `git mv` (tracked at 97% similarity per Constitution §3.3 versioning); (2) inside the relocated file, 4 table renames + 2 column renames; (3) `scripts/create-amp-agent.ts` structurally rewritten — 3 table renames, 4 column renames, `'plumber'` → `'plumbing'` industry value (matching ADR-004's vertical name), new `slugify()` helper, `slug` derivation in customer insert, `ORG_TYPE` constant dropped, log strings updated; (4) `scripts/check-template.ts` table + `type` → `industry` column rename; (5) `scripts/probe-schema.ts` + `scripts/check-schema.ts` introspection lists broadened to the canonical six.
+
+All four verification gates PASS: legacy-name grep zero matches; `organization_id` grep zero matches; `npx tsc --noEmit` clean (after clearing gitignored stale `.next/types/validator.ts` that referenced the pre-move route path); file-move sanity verified. CEO merged PR #9 (merge commit `cf0d12e`); Vercel auto-deploy in progress at session close.
+
+### What got decided
+
+- **Phase 3 verification-gates pattern is durable.** Legacy-name grep + column-name grep + tsc + file-move sanity caught a runtime-critical column-rename oversight that wasn't in the literal spec. Worth keeping for any future rename-sweep work.
+- **Stale `.next/types/validator.ts` from a file move is a known footgun.** When a route relocates between builds, the gitignored validator file in `.next/types/` holds a stale `import("../../app/.../route.js")` reference and tsc fails on it. Fix: `rm -rf .next/types/`. Recording so future Builders don't read the tsc error as a real regression.
+- **Two deliberate deferrals re-confirmed:** retell-sdk direct import (Phase 6 per ADR-003 §3.2 adapter); `console.error`/`console.warn` → structured logger (original ADR-003 Phase 3 infrastructure work, currently unassigned in the redraft).
+
+### What's open for next session
+
+- **Phase 4 execution per ADR-003 (Redrafted) — bring-up the call path.** Phase 4 is the milestone session (AMP answers its first real call). Recommend a fresh session on a different day:
+  - Pre-conditions now satisfied: Phase 2 ✓ (Session 013), Phase 3 ✓ (this session), PR #7 merged ✓ (Session 011), Vercel env vars ✓ (Session 012). One verification gate remains at Phase 4 start: synthetic POST to `https://amp-beta-one.vercel.app/api/webhooks/retell/v1/` returns 200/4xx (after Vercel deploy completes).
+  - Bring-up sequence: PATCH Retell agent `webhook_url` → publish agent → update Twilio `+12494448711` `voice_url` to Retell's Twilio-inbound URL → CEO places test call → verify `conversations` row appears, Sentry clean.
+- **`AMP_INTERNAL_TEST_ORG_ID` env-var name drift.** Still says "ORG" while the underlying table is `customers`. Preserved this session for env-var-contract continuity (changing requires a coordinated PR #7-style sweep across Vercel, `.env.example`, `.env.local`). Future ADR-008-adjacent rename sweep can address; non-blocking.
+- **RLS allow policies migration.** Becomes load-bearing when authenticated UI reads land; non-blocking for Phase 4 bring-up (service-role webhook bypasses RLS).
+
+### Tripwires fired
+
+None. T-006 / T-007 / T-008 / T-104 all held — no secret values handled, no broad git staging, no `.env.local` reads, no new `console.log` additions. Every verification gate ran fresh against post-edit file state; no "claims about external state without verification" regressions.
+
+### Constitution version at session start: v1.3
+### Constitution version at session end: v1.3 (no amendment)
+
+### Notes for future-Claude
+
+- **Always `rm -rf .next/types/` before `tsc --noEmit` after a route relocation.** The auto-generated validator references the pre-move path and produces a false-positive tsc error on a gitignored file. Don't treat it as a real regression.
+- **`git mv` preserves rename detection** even with subsequent content modifications. The 97% similarity tag on PR #9's webhook move confirms git tracked it as a rename, not delete+add — blame and history preserved. Prefer `git mv` over delete+create for any future route relocation.
+- **Pre-write audit ≠ spec compliance check; it's a runtime-correctness check.** The Phase 3 audit surfaced 2 column renames in route.ts and 6 column-level issues in `create-amp-agent.ts` that weren't in the literal spec's six-change framing but were required for the rename to actually work at runtime. Pattern: audit catches gaps → Architect authorizes broader scope → Builder executes. Keep this pattern; it's why both rename phases (PR #8 + PR #9) shipped without runtime regressions.
+- **Four sessions on 2026-05-23 (011, 012, 013, 014) is the cluster.** Session 013's close-note that "Phase 3 should be its own session on a different day" was not honored — the work fit cleanly. The note about Phase 4 being its own session on its own day still stands; Phase 4 touches live infrastructure (Retell publish, Twilio `voice_url` change, real test call) — qualitatively different from the schema/code work that fit into a one-day cluster.
+- **SESSION_LOG archive event.** Session 003 archived this session to `docs/archive/session-log/2026-05.md`. Next archive event triggers when Session 004 rolls off (after Session 015 lands).
