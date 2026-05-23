@@ -6,75 +6,6 @@ When this file exceeds 10 entries, the oldest entries are archived to `docs/arch
 
 ---
 
-## Session 004 — Workflow amendment (Constitution v1.1, ADR-005)
-**Date:** 2026-05-17
-**Duration:** ~30 minutes
-**Participants:** Main-thread Claude, CEO (Josh)
-
-### What happened
-- Josh asked to amend the workflow so documentation-only changes stop going through PRs while code changes keep the human gate.
-- Constitution amended **v1 → v1.1** per the Section 9 procedure: new **Section 7.5 ("PR discipline and the documentation carve-out")** added.
-- The rule: changes confined to `docs/` may commit directly to `main` without a PR; any change touching application code, schema, configuration, `.claude/`, or anything outside `docs/` still requires a feature branch, PR, Reviewer audit, and Josh's merge approval. **Path-scoped, not intent-scoped** — a single non-`docs/` file makes the entire change mixed.
-- **ADR-005** recorded in `docs/DECISIONS.md` per Section 9.
-- `.claude/commands/session-end.md` Step 3 rewritten to branch on session type.
-- `.claude/agents/builder.md` "no direct push to main" rule amended.
-- `.claude/agents/reviewer.md` special case added: docs-only direct commits are advisory-only for the Reviewer.
-- Branch `session-004-workflow-amendment` created off `origin/main` (independent of PR #3). 5 files staged by name (T-008), committed (`fc0efff`), pushed.
-- **PR #4 opened:** https://github.com/joshjgrills-svg/AMP/pull/4
-
-### What got decided
-- **ADR-005:** Documentation-only changes skip the PR gate. See DECISIONS.md for full rationale, alternatives, trade-offs, and what-would-change criteria.
-
-### What got deferred
-- **`docs/OPERATING_RHYTHM.md` update** — lines 22-30 list "Josh approves the PR" as a mandatory session step. This is now stale for docs-only sessions but intentionally NOT fixed in PR #4. After PR #4 merges, the OPERATING_RHYTHM fix is itself docs-only and becomes the **first exercise of the new §7.5 carve-out** — committed directly to main, no PR. Flagged in ADR-005.
-- All prior carryover: **ADR-003 (Constitutional cleanup plan)** remains the load-bearing next deliverable; the 27 inventory issues from Session 001 remain open until ADR-003 lands.
-
-### What got blocked
-- Nothing at write-time. PR #4 hit a trivial merge conflict with `main` after PR #3 merged (both PRs append to `docs/SESSION_LOG.md` and `docs/DECISIONS.md`); resolved by rebasing PR #4 onto the post-PR-#3 main and keeping both sets of entries in chronological order.
-
-### What's open for next session
-- **Update `docs/OPERATING_RHYTHM.md`** as the first §7.5 direct-to-main commit.
-- **ADR-003 (Constitutional cleanup plan)** drafted and approved before any cleanup code is touched.
-
-### What needs Josh
-- **Review and merge PR #4** (this session): https://github.com/joshjgrills-svg/AMP/pull/4 — 6 files (post-rebase), Constitution amendment + ADR-005 + agent file updates + SESSION_LOG entry
-- Approve ADR-003 at the start of the next session
-
-### Tripwires fired
-- **T-008 (preventive, functioned as designed)** — file staging during the rebase resolution was per-file (`git add docs/DECISIONS.md`, `git add docs/SESSION_LOG.md`); `scripts/check-calls.ts` still correctly untracked, still deferred to ADR-003.
-
-### Constitution version at session start: v1
-### Constitution version at session end: v1.1 (Section 7.5 added per ADR-005)
-
-### Notes for future-Claude
-The branch naming this session (`session-004-workflow-amendment`) coincidentally matches the SESSION_LOG entry number (Session 004), unlike the earlier session today (`session-002-wedge-adr-004` → Session 003 in the log). Do not try to enforce a convention here. Josh names branches by intent; the SESSION_LOG numbers sequentially. The two systems are independent.
-
-This is the **second session of 2026-05-17**. Two sessions in one day is fine when each closes cleanly; the SESSION_LOG entries make the boundary clear.
-
-The §7.5 carve-out is a **one-way unlock** — it permits direct-to-main commits for docs but does not require them. The Reviewer can still be invoked on a docs commit, and should be for any change to the load-bearing trio (NORTH_STAR, CONSTITUTION, DECISIONS). The carve-out reduces friction; it does not require lower discipline.
-
-ADR-005 itself was NOT eligible for the carve-out it establishes, because the change touched `.claude/` files. That's the path-scoped rule working as designed.
-
-The "Numbering note" inside ADR-005 says "ADR-004 is currently in flight in PR #3 and is not yet on `main`." That sentence was historically true at write-time and is preserved per the DECISIONS.md append-only policy — ADRs are not edited after being recorded. By the time you read this, both ADR-004 and ADR-005 are on main and the file shows them in chronological order (ADR-004 above ADR-005).
-
-### Process note (appended 2026-05-18)
-
-PROCESS NOTE: The §7.5 docs-only carve-out was first exercised (commit `8dbf768`, Vercel follow-up logging) while PR #4 — the PR that introduces §7.5 — was still open. The rule was used a few minutes before it was formally merged to main. No harm: PR #4 merged shortly after and the rule is now ratified. Recorded for honesty of the history. Lesson: a rule should be merged before it is relied upon; next time, merge first, then use.
-
----
-
-## Pending follow-ups (appended 2026-05-21, post Scout brief review)
-
-These items arose from CEO review of the home-services Scout brief (`docs/scout/2026-05-18_home-services-market.md`) on the evening of 2026-05-17. They are strategic carryover for the next session and must be addressed before further wedge execution.
-
-1. **STRATEGIC — Scout deep-dive on Avoca AI required before ADR-003.** Brief should cover: what Avoca actually does (technology, integrations, agent capabilities), pricing and customer segment, where they're strong, where they're vulnerable, how AMP differentiates structurally, signals on whether they're moving downmarket. This is the input ADR-004 was missing and must precede any further wedge work.
-
-2. **STRATEGIC — Amend ADR-004 to narrow the initial wedge from five trades to two (HVAC + plumbing), with electrical as fast-follow and roofing as Phase 2.** Drop general contracting from the initial naming. Amendment to be drafted after the Avoca brief lands.
-
-**Status (appended 2026-05-22):** Both items addressed in Session 005. Item 1 → `docs/scout/2026-05-22_avoca-competitive-deep-dive.md` (commit `2668673`). Item 2 → ADR-004 Amendment recorded in DECISIONS.md (Session 005 commit). The amendment ultimately retained electrical alongside HVAC and plumbing as a launch vertical (three trades, not two) per CEO direction after the Avoca brief landed.
-
----
-
 ## Session 005 — Avoca deep-dive + ADR-004 Amendment
 **Date:** 2026-05-22
 **Duration:** ~60 minutes
@@ -695,3 +626,44 @@ None. T-006 / T-007 / T-008 / T-104 all held — no secret values handled, no br
 - **Pre-write audit ≠ spec compliance check; it's a runtime-correctness check.** The Phase 3 audit surfaced 2 column renames in route.ts and 6 column-level issues in `create-amp-agent.ts` that weren't in the literal spec's six-change framing but were required for the rename to actually work at runtime. Pattern: audit catches gaps → Architect authorizes broader scope → Builder executes. Keep this pattern; it's why both rename phases (PR #8 + PR #9) shipped without runtime regressions.
 - **Four sessions on 2026-05-23 (011, 012, 013, 014) is the cluster.** Session 013's close-note that "Phase 3 should be its own session on a different day" was not honored — the work fit cleanly. The note about Phase 4 being its own session on its own day still stands; Phase 4 touches live infrastructure (Retell publish, Twilio `voice_url` change, real test call) — qualitatively different from the schema/code work that fit into a one-day cluster.
 - **SESSION_LOG archive event.** Session 003 archived this session to `docs/archive/session-log/2026-05.md`. Next archive event triggers when Session 004 rolls off (after Session 015 lands).
+
+---
+
+## Session 015 — Phase 4 Step 1 shipped; Step 2 halted on faulty redraft premise
+**Date:** 2026-05-23 (evening)
+**Duration:** ~45 minutes (Step 1 execution → Step 2 pre-step verification → halt + report → close)
+**Participants:** Architect/Builder (Claude), CEO (Josh)
+
+### What happened
+
+Phase 4 Step 1 executed cleanly. Retell agent `agent_0e211c256211ef2ead23cc8375` updated via `agent.update` with `webhook_url=https://amp-beta-one.vercel.app/api/webhooks/retell/v1` (canonical, no trailing slash), then published via `POST /publish-agent/{agent_id}`. The SDK's typed `agent.publish()` threw client-side on Retell's `204`-with-empty-body response — the SDK's response parser calls `JSON.parse('')` and throws `SyntaxError: Unexpected end of JSON input` — but the server-side action succeeded; worked around with raw `fetch`. Verification via `agent.getVersions()` (not `is_published` on `agent.retrieve()`, which always reads `false` post-publish per the SDK's own docstring: publish snapshots the current version and forks the agent to a new draft) confirmed v0 and v1 both `is_published=true` with the canonical URL. Live published version is v1; v2 is the current draft.
+
+Phase 4 Step 2 (Twilio `voice_url` update) HALTED at the pre-step verification gate. The redraft's assumed URL pattern `https://api.retellai.com/twilio-voice-webhook/{agent_id}` was probed against Retell's own API server: both `POST` and `GET` returned `HTTP 404` with body `Cannot POST /twilio-voice-webhook/agent_…` (Express-style "no route registered" error). Docs review across `docs.retellai.com/deploy/twilio`, `/make-calls/custom-twilio`, the changelog, the retell-sdk source, and three independent tutorials confirmed: Retell does NOT host a Twilio voice_url endpoint. Retell's actual Twilio integration paths are (1) SIP trunking via `phoneNumber.import` (Claire's pattern; `lib/retell.ts:registerPhoneNumber` already wraps it), or (2) an AMP-hosted TwiML route calling Retell's Register Phone Call API. Per spec ("If you cannot find the exact URL, STOP and report. Do not guess."), no Twilio state change was issued. Halt report enumerated four options (A: SIP trunk, B: AMP TwiML route, C: Retell-purchased number, D: switch to Telnyx) with Option A recommended.
+
+### What got decided
+
+- **The redraft's HTTP-webhook routing decision was based on a faulty premise** ("HTTP webhook is one Twilio `voice_url` field set to Retell's Twilio-inbound URL"). That URL doesn't exist. The redraft requires amendment before Phase 4 can re-execute. Status appendage landed in DECISIONS.md under the Phase 4 pre-conditions block recording the halt, the probe evidence, and the four options.
+- **Step 1 state preserved, not rolled back.** Published Retell agent with canonical webhook URL is the correct receiver-side end-state regardless of routing path. Rollback would only be needed if we wanted to inert the agent entirely — which we don't.
+- **Recommended next path: Option A** (recreate Twilio SIP trunk via dashboard, run `phoneNumber.import`). Surfaced not decided — CEO authors the amendment and picks the option.
+
+### What's open for next session
+
+- **Architect produces ADR-003 redraft amendment** to the Phase 4 portion. The amendment reverses the anti-SIP decision with explicit reasoning ("the HTTP alternative we preferred does not exist as described") and selects the option for Phase 4 re-execution.
+- **Phase 4 re-executes via the chosen option** (Option A recommended): CEO creates Twilio elastic SIP trunk via dashboard with chosen subdomain; Builder runs `phoneNumber.import` via `lib/retell.ts:registerPhoneNumber`; CEO places test call; verify `conversations` row appears and Sentry stays clean.
+- **`is_published: false` re-publish question for Phase 4.** If the agent is modified again before the test call (greeting tweaks, etc.), a fresh publish is required. The current draft (v2) carries the canonical webhook URL but is not yet a published version. Surface for the next session's Phase 4 Builder.
+
+### Tripwires fired
+
+None. T-006 / T-007 / T-008 / T-104 all held. **Positive example of "verify before you act":** the spec's "if you cannot find the exact URL, STOP and report" clause was exactly the right discipline. A guess at the URL would have routed `+12494448711` into a 404 wall — every inbound call would silently fail. The pre-step probe caught this with zero blast radius.
+
+### Constitution version at session start: v1.3
+### Constitution version at session end: v1.3 (no amendment)
+
+### Notes for future-Claude
+
+- **The retell-sdk `agent.publish()` has a 204-handling bug.** Typed signature is `Promise<void>` but the response parser tries to `JSON.parse('')` on the empty body and throws. Workaround: bypass the SDK for this one call and use raw `fetch` against `POST /publish-agent/{agent_id}` with the Retell API key as Bearer auth. If the SDK ships a fix in a later version, the workaround can be removed.
+- **Retell's publish/version model is non-obvious.** `is_published` on `agent.retrieve()` always reads `false` after a publish because retrieve returns the current draft, and publish creates a fresh draft above the just-published snapshot. The right verification is `agent.getVersions()` filtered for `is_published: true`. The redraft's verification language was wrong on this point too — a smaller error than the URL one, but in the same family of "spec was written without consulting the SDK shape."
+- **The "approximately X" pattern in specs is load-bearing.** The redraft said the URL format was "approximately `https://api.retellai.com/twilio-voice-webhook/{agent_id}`." That single qualifier was the safety net — it told the Builder to verify before acting, and the Builder did. Without it, the literal instruction might have been followed and `+12494448711` would have been pointed at a 404 wall. When specs carry known uncertainty, **flag it explicitly with a hedge word** ("approximately", "verify before", "format is roughly"); silent assumptions are how blast-radius incidents start.
+- **Five sessions on 2026-05-23 (011, 012, 013, 014, 015) is the cluster.** Phase 4 re-execution needs a fresh session — the redraft amendment is non-trivial drafting work, and the new Step 2 spec depends on which option CEO picks. Don't try to roll the amendment + new spec + execution into a sixth in-day session.
+- **The Phase 4 Status appendage in DECISIONS.md is now multi-paragraph.** Three Status notes under the Phase 4 pre-conditions block (Session 012, Session 014, Session 015). Future amendments should land at the same location to keep the audit trail dense. When the next Phase 4 attempt lands, its Status appendage references this one as the prerequisite-amendment commit.
+- **SESSION_LOG archive event.** Session 004 archived this session to `docs/archive/session-log/2026-05.md`. Next archive event triggers when Session 005 rolls off (after Session 016 lands).
