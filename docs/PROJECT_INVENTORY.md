@@ -162,10 +162,10 @@ Constitution Section 3.2 (`packages/shared/integrations/{service}/` adapter patt
 - `RETELL_API_KEY` — present (REDACTED, rotated 2026-05-13)
 - `TWILIO_ACCOUNT_SID` — present (REDACTED)
 - `TWILIO_AUTH_TOKEN` — present (REDACTED, rotated 2026-05-13)
-- `TWILIO_PHONE_NUMBER=+12494448711`
+- `AMP_PHONE_NUMBER=+12494448711` (renamed from `TWILIO_PHONE_NUMBER` per ADR-008 Layer 1 — it is our number, Twilio is the provider)
 - `NEXT_PUBLIC_APP_URL=https://amp-beta-one.vercel.app`
-- `AMP_PLUMBER_AGENT_ID=agent_58fbaa9f9eb2e1f6698e54bedd`
-- `AMP_PLUMBER_LLM_ID=llm_2387332d2303961cb4d67d815d9e`
+- `AMP_AGENT_DEFAULT_V1=agent_58fbaa9f9eb2e1f6698e54bedd` (renamed from `AMP_PLUMBER_AGENT_ID` per ADR-008; the value shown here is the Session-001 snapshot — the live ID since 2026-05-01 is `agent_0e211c256211ef2ead23cc8375`, per SESSION_LOG Session 007. Live-value update is Pending follow-up #2.)
+- `AMP_PLUMBER_LLM_ID` — removed per ADR-008 rename sweep (variable was unused in code; deleted rather than renamed)
 - `AMP_INTERNAL_TEST_ORG_ID=3c456ea7-4079-40bd-9446-79a13e5a3509`
 
 **The `.env.local` file is on disk in the working tree.** `.gitignore` excludes `.env*` (line 28) and `git ls-files` confirms it is untracked. So the secrets are not in git history. But: they are live keys sitting on a Codespace, and there is no `.env.example` documenting them — Section 4.1 violation. The Twilio auth token and Supabase service-role key in particular should be considered rotation candidates by default at the end of the Build Phase, given how many places they may have been exposed during the Claire OS era.

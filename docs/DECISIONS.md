@@ -1145,3 +1145,21 @@ The rename sweep itself is NOT executed in this commit. The sweep touches code (
 - ADR-004 amendment (2026-05-22) — Plumbing + Electrical + HVAC as parallel verticals; the ADR that obsoletes "Plumber" as a singular noun in the prefix slot
 - Session 007 (2026-05-22) — Retell agent rename from "AMP Plumber - Default" to "AMP - Plumbing - V1"; the inaugural exercise of the convention before the convention was written down
 - Constitution Section 9 (the amendment procedure followed to land this change)
+
+### Status (appended 2026-05-23, Session 010 — Rename sweep executed)
+
+The rename sweep queued by this ADR is **executed** as of 2026-05-23. The three explicit renames specified in the body:
+
+- `AMP_PLUMBER_AGENT_ID` → `AMP_AGENT_DEFAULT_V1` ✓
+- `AMP_PLUMBER_LLM_ID` → **deleted** (not renamed; Phase 1 audit confirmed unused in code — see Session 010 entry for the reasoning)
+- `TWILIO_PHONE_NUMBER` → `AMP_PHONE_NUMBER` ✓ (Layer 1 reclassification: it is AMP's number, Twilio is the provider)
+
+Plus one display-name fix surfaced by the audit clause: `scripts/bind-phone.ts:17` nickname `'AMP Production - Plumber'` → `'AMP Production - Plumbing'` (singular-noun-as-vertical pattern fix per ADR-008 §5).
+
+Three Claire-trunk scripts deleted as a side-effect of the rename sweep (`scripts/register-phone.ts`, `scripts/audit-trunk.ts`, `scripts/attach-number-to-trunk.ts`) — they hardcoded resources deleted in Phase 1.5 and would have returned Twilio 404 if executed.
+
+Audit-clause findings recorded in Session 010 entry and the PR body: `lib/{twilio,retell,supabase}.ts` flat layout violates ADR-008 §3 (defer to a structural restructure); `scripts/create-amp-agent.ts` lines 9-11 hardcode vertical-scope choices (defer to Phase 4 redraft / ADR-004 amendment scope).
+
+Branch: `rename-sweep-adr-008`. The `.env.example` rename is folded into PR #5 (Phase 1 repo hygiene) rather than this PR because PR #5 creates that file. Vercel dashboard work for the renamed env vars is pending CEO execution per the rename-sweep PR body.
+
+Constitution v1.3 (the version bumped when this ADR landed) is unchanged by this status update; the rename sweep is an implementation of ADR-008, not an amendment to it.

@@ -95,9 +95,9 @@ async function main() {
   console.log('=== Done ===');
   console.log('');
   console.log('Add these to .env.local (replacing any existing values):');
-  console.log('  AMP_PLUMBER_AGENT_ID=' + agentId);
-  console.log('  AMP_PLUMBER_LLM_ID=' + llmId);
+  console.log('  AMP_AGENT_DEFAULT_V1=' + agentId);
   console.log('  AMP_INTERNAL_TEST_ORG_ID=' + org!.id);
+  console.log('  (LLM ID ' + llmId + ' — no env var; AMP_PLUMBER_LLM_ID removed per ADR-008 rename sweep)');
 }
 
 main().catch((err) => {
