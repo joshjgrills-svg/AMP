@@ -22,11 +22,11 @@ export interface SendSmsInput {
   statusCallback?: string;
 }
 
-// Sends an SMS via Twilio. `from` defaults to TWILIO_PHONE_NUMBER (the AMP
+// Sends an SMS via Twilio. `from` defaults to AMP_PHONE_NUMBER (the AMP
 // outbound sending number used for confirmations and reminders).
 // Returns the Twilio message SID for logging/idempotency.
 export async function sendSms(input: SendSmsInput): Promise<string> {
-  const from = input.from ?? requireEnv('TWILIO_PHONE_NUMBER');
+  const from = input.from ?? requireEnv('AMP_PHONE_NUMBER');
   const to = formatPhoneNumber(input.to);
   const message = await twilioClient.messages.create({
     to,

@@ -589,12 +589,12 @@ This is a material restructuring — ADR-003 may go from 7 phases to 5 or 6, and
 
 2. **Update `docs/PROJECT_INVENTORY.md` and `docs/DECISIONS.md` (ADR-002, ADR-003) to reflect live agent/LLM IDs.** Currently both reference the dead `agent_58fbaa9f9eb2e1f6698e54bedd` and `llm_2387332d2303961cb4d67d815d9e`. Fold into the ADR-003 Phase 4 redraft commit rather than patching standalone.
 
-3. **RENAME SWEEP — apply ADR-008 naming convention to existing identifiers.** (Appended 2026-05-23, Session 008.) Scope:
+3. **RENAME SWEEP — apply ADR-008 naming convention to existing identifiers.** (Appended 2026-05-23, Session 008.) **Status: EXECUTED 2026-05-23 in Session 010 — see branch `rename-sweep-adr-008` and Session 010 entry below. Code, `.env.local`, and the in-repo docs portion are done. Vercel dashboard work pending CEO execution per PR body.** Scope:
 
-   - `AMP_PLUMBER_AGENT_ID` → `AMP_AGENT_DEFAULT_V1`
-   - `AMP_PLUMBER_LLM_ID` → `AMP_LLM_DEFAULT_V1` (or delete if confirmed unused)
-   - `TWILIO_PHONE_NUMBER` → `AMP_PHONE_NUMBER` (it is our number, Twilio is the provider — Layer 1, not Layer 2)
-   - Audit for any other identifiers that pre-date ADR-008 and conflict with the convention.
+   - `AMP_PLUMBER_AGENT_ID` → `AMP_AGENT_DEFAULT_V1` ✓ (done)
+   - `AMP_PLUMBER_LLM_ID` → `AMP_LLM_DEFAULT_V1` (or delete if confirmed unused) — **deleted** in Session 010 (confirmed unused in code; Phase 1 audit finding)
+   - `TWILIO_PHONE_NUMBER` → `AMP_PHONE_NUMBER` (it is our number, Twilio is the provider — Layer 1, not Layer 2) ✓ (done)
+   - Audit for any other identifiers that pre-date ADR-008 and conflict with the convention. — Session 010 audit clause complete; findings in Session 010 entry and the PR body.
 
    Sweep covers: `.env.local`, `.env.example`, Vercel env vars across Production / Preview / Development, all code references, all docs that mention the variable names, Retell agent metadata fields if applicable. Confirm full scope with grep before executing.
 
@@ -666,3 +666,71 @@ Executed ADR-003 Phase 1.5 — decommission Claire-era resources before Phase 4 
 - **Per-step verification pattern (used here) is the right shape for destructive sweeps.** Each `DELETE` was immediately followed by a `GET` to confirm 404. The Twilio trunk deletion additionally had two pre-flight checks (number's voice_url unchanged, no other numbers referencing the trunk) before the destructive call. Document this pattern in the next refresh of OPERATING_RHYTHM.md if it earns its keep through more such sweeps.
 - **Secrets handling held the T-006/T-007 line.** Credentials were sourced from `.env.local` into the shell environment with `set -a; source ... ; set +a` and used only via `Authorization` headers / curl basic auth. No secret values were echoed to chat or written to any committed file at any point.
 - **T-008 held.** All staging in this session was per-file by name. No `git add -A` or `.` patterns.
+
+---
+
+## Session 010 — Rename sweep (ADR-008)
+**Date:** 2026-05-23
+**Duration:** ~60 minutes (audit grep + code + `.env.local` + docs + 3 script deletions + initial PR + rebase reconciliation + `.env.example` + force-push)
+**Participants:** Main-thread Claude, CEO (Josh)
+
+### What happened
+
+Executed ADR-008's three-layer naming convention across the repo. The execution closes Pending follow-up #3 (queued in Session 008 when ADR-008 was ratified). Branch: `rename-sweep-adr-008`, originally branched from `main` at `79213e7`. The branch was subsequently rebased onto `6ed26c1` (current `origin/main`, which incorporates PR #5 and PR #6 — both merged during this session). The rebase reconciliation added the `.env.example` rename to this PR; the original push had deferred that file to PR #5, which then merged with the old names before coordination could occur. See "Provenance note" in the PR body for the full chronology.
+
+**Audit grep findings (before any edit):**
+
+- `AMP_PLUMBER_AGENT_ID` — 3 active code references: `scripts/bind-phone.ts:10`, `scripts/register-phone.ts:10`, `scripts/create-amp-agent.ts:98` (last one being a console.log instruction). All renamed/handled.
+- `AMP_PLUMBER_LLM_ID` — 1 active reference: `scripts/create-amp-agent.ts:99` (console.log instruction). Confirmed unused as a `process.env` read; per the Phase 1 audit finding, this variable was a candidate for deletion rather than rename. Per CEO instruction, **deleted** rather than renamed.
+- `TWILIO_PHONE_NUMBER` — 3 active code references: `lib/twilio.ts:25` (comment), `lib/twilio.ts:29` (`requireEnv` call), `scripts/register-phone.ts:9` and `:14` (error message + read). Renamed in `lib/twilio.ts`; the script references go away with the deletion of the script.
+- Audit clause — broader grep for `AMP_<VERTICAL>_*` patterns and vendor-prefixed names that should be Layer 1: no other targets. `AMP_INTERNAL_TEST_ORG_ID` conforms to ADR-008 Layer 1 shape (kept as-is). `NEXT_PUBLIC_*` framework names are conforming Layer 3.
+- Display-name audit: `scripts/bind-phone.ts:17` had `nickname: 'AMP Production - Plumber'` — singular-noun-as-vertical pattern. Updated to `'AMP Production - Plumbing'`.
+- `scripts/create-amp-agent.ts` lines 9, 10, 11, 23 hardcode singular-vertical concepts (`'AMP Internal Test'`, `'plumber'`, `'AMP Plumber - Default'`, `.eq('type', 'plumber')`). Out of rename-sweep scope (these are vertical-scope and schema-shape decisions owned by ADR-004 amendment + Phase 4 redraft, not ADR-008). Justification recorded in PR body; the script is already known-broken per PROJECT_INVENTORY item #15.
+- `lib/{twilio,retell,supabase}.ts` flat layout violates ADR-008 §3's `lib/integrations/<vendor>/` recommendation. Constitution §3.2 also calls for this. Out of rename-sweep scope (structural restructure); justification recorded in PR body. Earmarked for a future restructure session.
+
+**Three Claire-trunk scripts deleted** (`scripts/register-phone.ts`, `scripts/audit-trunk.ts`, `scripts/attach-number-to-trunk.ts`) per CEO recommendation (operating principle "Claire is dead, AMP is fresh build"). All three hardcoded resources that no longer exist after Phase 1.5 (trunk `TK1be0c12fb9bfc4f7054fbde6b15885f2`, SIP domain `claireai.pstn.twilio.com`). The scripts would return Twilio 404 if executed. Phase 4 bring-up provisions any needed SIP routing from scratch under the new convention.
+
+**Files touched (committed):**
+
+- `.env.example` — `TWILIO_PHONE_NUMBER` → `AMP_PHONE_NUMBER` (with the leading comment updated to reflect the new ownership framing); `AMP_PLUMBER_AGENT_ID` → `AMP_AGENT_DEFAULT_V1` (with comment updated). Added during the rebase reconciliation; `AMP_PLUMBER_LLM_ID` was never present in `.env.example` so no deletion needed there.
+- `lib/twilio.ts` — 2 occurrences updated (`TWILIO_PHONE_NUMBER` → `AMP_PHONE_NUMBER`)
+- `scripts/bind-phone.ts` — 3 changes: env var rename for phone number (1) and agent ID (1), and nickname display string updated (1)
+- `scripts/create-amp-agent.ts` — console.log instruction block updated: new env-var name shown, LLM ID line removed (variable deleted), explanatory line added pointing at ADR-008
+- `scripts/register-phone.ts` — deleted
+- `scripts/audit-trunk.ts` — deleted
+- `scripts/attach-number-to-trunk.ts` — deleted
+- `docs/PROJECT_INVENTORY.md` — env-var snapshot block updated; live-value note added for the `AMP_AGENT_DEFAULT_V1` line (Session-001 snapshot value is dead, live ID is in SESSION_LOG Session 007; Pending follow-up #2 still owns the live-value propagation)
+- `docs/DECISIONS.md` — Status note appended under ADR-008
+- `docs/SESSION_LOG.md` — Pending follow-up #3 annotated as EXECUTED; this Session 010 entry added
+
+**Files updated locally but not committed (gitignored):**
+
+- `.env.local` — three changes: `TWILIO_PHONE_NUMBER` → `AMP_PHONE_NUMBER`, `AMP_PLUMBER_AGENT_ID` → `AMP_AGENT_DEFAULT_V1`, `AMP_PLUMBER_LLM_ID` line removed. File is gitignored per `.env*` rule.
+
+### What got decided
+
+- **AMP_PLUMBER_LLM_ID: delete instead of rename.** Phase 1 audit confirmed unused in code (only emitted by `scripts/create-amp-agent.ts` as a console.log instruction line). No consumers anywhere. Deletion is cleaner than renaming an unused variable.
+- **Three Claire-trunk scripts: delete.** Per the operating principle and the fact that they reference now-deleted Twilio resources, they cannot be executed against the live account. Phase 4 will provision SIP routing from scratch if needed.
+- **The display-name nickname in `bind-phone.ts`: also updated.** It violated ADR-008 §5's "vertical name as descriptive content" pattern (singular noun "Plumber" vs. gerund "Plumbing" used in the live agent display name "AMP - Plumbing - V1"). Updated for consistency.
+
+### What's open for next session
+
+- **Vercel dashboard work for the rename sweep.** For each of Production / Preview / Development: (a) create new variable names with the same values where the old names exist, (b) delete the old names. Spec'd as a checklist in this PR's body. The PR does not block on Vercel — CEO completes the dashboard work and merges. This also stacks with the Vercel Preview/Development Supabase env-var configuration that PR #5 surfaced and was not completed at PR #5 merge time — both should be applied before the renamed environment is expected to build cleanly.
+- **PR #5 (Phase 1 repo hygiene) — MERGED (2026-05-23T03:25:57Z).** No longer open. The `.env.example` it created used the pre-rename names; this PR's rebase reconciliation updates that file to the post-ADR-008 shape.
+- **PR #6 (Phase 1.5 Claire decommission) — MERGED (2026-05-23T04:00:41Z).** No longer open. ADR-002's full decommission commitment is closed (per Phase 1.5 status appendage under ADR-002 in DECISIONS.md).
+- **ADR-003 Phase 4 redraft** (Pending follow-up #1) is the natural next executable step. Inputs: this PR's canonical names (e.g., `AMP_AGENT_DEFAULT_V1`); the operating principle; Session 007 + 009 narrative.
+- **`ClaireAi` Supabase project decision** (per Session 009 carryover) — separate session.
+
+### Tripwires fired
+
+None. T-006/T-007/T-008 held throughout: `.env.local` content was not echoed to chat; Edit operations matched on variable-name prefixes only; staging was per-file by name.
+
+### Constitution version at session start: v1.3
+### Constitution version at session end: v1.3 (no amendment in this session)
+
+### Notes for future-Claude
+
+- **The rename sweep is purely mechanical**, but the file count is non-trivial (8 files changed, 3 deleted). The grep-first / surface-findings-before-edit pattern surfaces audit-clause findings that warrant written justification per ADR-008's enforcement clause. Skipping a name silently is a tripwire-adjacent failure mode; even small skips deserve a sentence in the PR body.
+- **PR independence vs. cross-PR coordination — the version of this note that survives contact with reality.** The original push of this PR was branched from `main` at `79213e7`, before PR #5 and PR #6 merged. The strategy at the time was: keep the rename sweep PR independent of PR #5 and PR #6 by deferring `.env.example` to PR #5's branch. That deferral didn't survive — PR #5 merged with the old names before the coordination could happen. Net learning: when a queued change touches a file another open PR creates, the coordination must be either (a) a real `gh pr edit`/commit-to-other-branch action with confirmation, or (b) a stacked PR with explicit base-branch dependency, NOT a "coordinate in the PR body" arrangement. The "merge order is the CEO's call" framing assumed the CEO would also reconcile the cross-PR edits, which is unrealistic for a sweep this size. Recovery here was a clean rebase + .env.example fold-in + force-push; cheap because the rename was mechanical, but the orientation error itself (claiming PRs were still open when they had merged 30+ minutes earlier) was worth a tripwire-style review and is the kind of failure mode the auto-memory `MEMORY.md` discipline is supposed to prevent in the first place.
+- **`scripts/create-amp-agent.ts` is broken**, hardcodes the Claire-era vertical ("plumber" / "AMP Plumber - Default"), and won't run against the current schema. The rename sweep updated the env-var name in its console.log instruction but left the broader brokenness for Phase 4. If Phase 4 needs to provision a fresh agent, expect to rewrite this script (or replace it) rather than fix it.
+- **`scripts/bind-phone.ts` is functional** post-rename but assumes the AMP phone number is already registered in Retell's phone-number registry (which it isn't per Phase 1.5 audit — Retell's `/list-phone-numbers` returns empty). To actually bind, the number first needs registering via Retell's phoneNumber.import API (formerly the deleted `register-phone.ts` did this with a Claire-named trunk). Phase 4 owns the new bring-up path.
