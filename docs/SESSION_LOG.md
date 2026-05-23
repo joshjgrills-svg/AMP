@@ -599,3 +599,71 @@ This is a material restructuring — ADR-003 may go from 7 phases to 5 or 6, and
    Sweep covers: `.env.local`, `.env.example`, Vercel env vars across Production / Preview / Development, all code references, all docs that mention the variable names, Retell agent metadata fields if applicable. Confirm full scope with grep before executing.
 
    Timing: execute after ADR-003 Phase 1.5 (Claire decommission) and before ADR-003 Phase 4 (bring-up). Phase 4 references whatever the canonical names are at that point. One focused session.
+
+---
+
+## Session 009 — Phase 1.5: Claire Decommission (ADR-003)
+**Date:** 2026-05-23
+**Duration:** ~45 minutes (audit + 4 destructive actions + per-step verification + docs)
+**Participants:** Main-thread Claude, CEO (Josh)
+
+### What happened
+
+Executed ADR-003 Phase 1.5 — decommission Claire-era resources before Phase 4 bring-up. Three-part flow: Part A (audit, no deletions), Part B (CEO confirmation of each delete/keep call), Part C (sequential destructive actions with per-step verification). All four authorized deletions completed successfully; verified gone via 404 GETs at the API. Full inventory + decisions + execution log captured in `docs/PHASE_1_5_AUDIT.md`.
+
+**Part A — Audit findings:**
+
+- **Retell (3 agents, 2 LLMs found).** Canonical AMP agent `agent_0e211c256211ef2ead23cc8375` ("AMP - Plumbing - V1") and its LLM `llm_b440eb1b707430fc9aa4d8d0164d` (claude-4.6-sonnet, plumbing prompt) confirmed live. Two "from template" agents — `agent_ddd09f387dcccc43b0f24ea350` ("Healthcare Check-In (from template)") and `agent_ceeab21fd886bdb7ea3bb46925` ("Patient Screening (from template)") — unpublished, no webhooks, zero references in AMP repo. LLM `llm_b470ed9903fcd7c51980e31e3ac2` (gpt-4.1, Retell Health prompt) referenced only by the Healthcare agent. All three Claire-era.
+- **Twilio (1 number, 1 SIP trunk).** Phone number `+12494448711` voice/SMS URLs pointed at Twilio demo (inert). Attached to SIP trunk `TK1be0c12fb9bfc4f7054fbde6b15885f2` — **friendly_name "Claire Ai", domain "claireai.pstn.twilio.com"** — with one origination URL routing to `sip:sip.retellai.com`. Unambiguous Claire branding. Three AMP scripts (`register-phone.ts:11`, `audit-trunk.ts:13`, `attach-number-to-trunk.ts:13`) hardcode this trunk's SID or domain (already PROJECT_INVENTORY item #16; out of Phase 1.5 scope per CEO).
+- **Supabase (4 projects on the org).** Canonical AMP project `yxuhjxxbgbuznpoekwpj` (ACTIVE_HEALTHY) and a Claire-era project `mnsclowesetxpwpukohx` ("ClaireAi", INACTIVE, ca-central-1, created 2026-04-08). Per CEO instruction, the Claire project is **NOT touched in Phase 1.5** — flagged as a separate decision. Two unrelated projects (`FinderHub-v2`, `combinecrush`) noted for org-level awareness.
+- **GitHub.** Only `joshjgrills-svg/AMP` exists. No `claire-*` repo.
+- **Codespaces.** Only `congenial-halibut-wrpp4974657p2gxrv` exists, tied to AMP repo. The name is GitHub-generated, not a Claire reference.
+- **Vercel — GAP.** CLI installed but unauthenticated; cannot enumerate Vercel projects programmatically. Pending CEO dashboard check for `claire-ai-beta.vercel.app` status and any Claire-era env vars on other projects.
+
+**Part B — CEO decisions (2026-05-23):**
+
+1. Delete the two "from template" Retell agents and the orphan LLM.
+2. Delete the "Claire Ai" Twilio SIP trunk. Leave `+12494448711` alone (trunk deletion clears `trunk_sid` to null without affecting the number).
+3. Vercel decommission pending dashboard check; not executed this session.
+4. Hardcoded Claire references in three scripts deferred to the rename sweep.
+5. `ClaireAi` Supabase project deferred to separate decision.
+
+**Part C — Execution log (UTC timestamps captured at moment of each DELETE):**
+
+| # | Resource | Action | Timestamp | Response | Verification |
+|---|---|---|---|---|---|
+| 1 | Retell agent `agent_ddd09f387dcccc43b0f24ea350` | DELETE | 2026-05-23T03:44:05Z | HTTP 204 | GET → HTTP 404 ✓ |
+| 2 | Retell agent `agent_ceeab21fd886bdb7ea3bb46925` | DELETE | 2026-05-23T03:44:15Z | HTTP 204 | GET → HTTP 404 ✓ |
+| 3 | Retell LLM `llm_b470ed9903fcd7c51980e31e3ac2` | DELETE | 2026-05-23T03:44:25Z | HTTP 204 | GET → HTTP 404 ✓ |
+| 4 | Twilio trunk `TK1be0c12fb9bfc4f7054fbde6b15885f2` | DELETE | 2026-05-23T03:45:02Z | HTTP 204 | GET → HTTP 404 ✓; `+12494448711` preserved with `trunk_sid: null`, voice/SMS URLs unchanged |
+
+**Trunk deletion pre-flight verifications (immediately before the DELETE call):** `+12494448711` voice_url confirmed still `https://demo.twilio.com/welcome/voice/`; trunk SID had exactly one phone number reference (the number being preserved); no surprises.
+
+### What got decided
+
+- **ADR-002's Retell and Twilio decommission commitments are now executed.** A "Status (appended 2026-05-23, Session 009)" note is added under ADR-002 in DECISIONS.md noting the partial execution; Vercel portion remains pending.
+- **The Vercel CLI auth gap** is real but bounded — CEO will run dashboard check next session or authenticate the CLI via `! vercel login`. Either path completes the ADR-002 commitment.
+- **`ClaireAi` Supabase project decision** is its own session. Not folded into Phase 1.5.
+- **Hardcoded Claire-era artifacts in three scripts** (PROJECT_INVENTORY item #16) will now return Twilio 404 if executed. Annotation added to PROJECT_INVENTORY.md so the next reader is not surprised. Cleanup is owned by the rename sweep (SESSION_LOG.md Pending follow-up #3) or by Phase 4 bring-up, whichever runs first.
+- **No new tripwire warranted.** The deletions were authorized, reviewed, executed, and verified through standard means. T-006/T-007/T-008 already cover the secret-handling and broad-staging failure modes that were live in this session.
+
+### What's open for next session
+
+- **Vercel `claire-ai-beta.vercel.app` decommission.** Awaiting CEO dashboard check; will be folded into Phase 1.5's PR or a follow-up PR.
+- **`ClaireAi` Supabase project (`mnsclowesetxpwpukohx`) decision.** Separate session; not folded into Phase 1.5.
+- **ADR-003 Phase 2** (or Phase 4 redraft, per Session 007 follow-up #1, depending on whether the Architect collapses Phase 2 under "Claire is dead" reasoning) is the natural next executable step once Vercel decommission lands.
+- **PR #5 (Phase 1 repo hygiene)** remains open; awaiting CEO review and merge. Vercel Preview/Development env-var configuration also still pending CEO dashboard work as documented in the PR body.
+
+### Carryover
+
+- **PR #5 (Phase 1: repo hygiene).** Open. Awaiting CEO review/merge and Vercel Preview/Development env-var configuration.
+- **This PR (Phase 1.5: Claire decommission Retell + Twilio).** Open against `phase-1-5-claire-decommission`. Awaiting CEO review and merge; Vercel decommission pending dashboard data.
+- **Pending follow-up #1** (ADR-003 Phase 4 redraft — cutover to bring-up): unchanged.
+- **Pending follow-up #2** (PROJECT_INVENTORY / DECISIONS dead-ID propagation): unchanged.
+- **Pending follow-up #3** (Rename sweep per ADR-008): unchanged. Will now include cleanup of the three hardcoded-Claire-trunk scripts as part of its scope.
+
+### Process notes
+
+- **Per-step verification pattern (used here) is the right shape for destructive sweeps.** Each `DELETE` was immediately followed by a `GET` to confirm 404. The Twilio trunk deletion additionally had two pre-flight checks (number's voice_url unchanged, no other numbers referencing the trunk) before the destructive call. Document this pattern in the next refresh of OPERATING_RHYTHM.md if it earns its keep through more such sweeps.
+- **Secrets handling held the T-006/T-007 line.** Credentials were sourced from `.env.local` into the shell environment with `set -a; source ... ; set +a` and used only via `Authorization` headers / curl basic auth. No secret values were echoed to chat or written to any committed file at any point.
+- **T-008 held.** All staging in this session was per-file by name. No `git add -A` or `.` patterns.
