@@ -1,0 +1,430 @@
+<title>ProScore Front Desk Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~70ch) with full-width tables; the pro's journey is the spine, stages in order. */
+:root{
+  --bg:#F7F8F7; --surface:#FFFFFF; --fg:#16283F; --muted:#556479; --line:#DCE2E8;
+  --steel:#1E3A5F; --mint:#17A673; --mint-soft:#E3F6EE; --warn:#B4531A; --warn-soft:#FBEDE3;
+  --display:'Sora',ui-sans-serif,system-ui,sans-serif; --body:'DM Sans',ui-sans-serif,system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1722; --surface:#16212F; --fg:#E6ECF2; --muted:#9AA8B8; --line:#2A3748;
+  --steel:#A9C4E4; --mint:#3DD69C; --mint-soft:#143528; --warn:#F0A06B; --warn-soft:#3A2617; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1722; --surface:#16212F; --fg:#E6ECF2; --muted:#9AA8B8; --line:#2A3748;
+  --steel:#A9C4E4; --mint:#3DD69C; --mint-soft:#143528; --warn:#F0A06B; --warn-soft:#3A2617; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6}
+.wrap{max-width:880px;margin:0 auto;padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:46px}
+header{display:flex;flex-direction:column;gap:10px;border-bottom:2px solid var(--steel);padding-bottom:22px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-size:clamp(28px,5vw,40px);line-height:1.15;margin:0;color:var(--steel);text-wrap:balance}
+h2{font-family:var(--display);font-size:22px;margin:0 0 6px;color:var(--steel);text-wrap:balance}
+h3{font-family:var(--display);font-size:16px;margin:18px 0 4px}
+p{margin:0 0 12px;max-width:70ch}
+ul,ol{margin:0 0 12px;padding-left:22px;max-width:72ch} li{margin-bottom:6px}
+section{display:flex;flex-direction:column;gap:6px;min-width:0}
+.lede{font-size:18px;max-width:68ch}
+.verdict{background:var(--mint-soft);border-left:4px solid var(--mint);padding:16px 18px;border-radius:4px}
+.verdict p:last-child,.caution p:last-child{margin-bottom:0}
+.caution{background:var(--warn-soft);border-left:4px solid var(--warn);padding:14px 18px;border-radius:4px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:600px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:500;background:var(--bg)}
+tr:last-child td{border-bottom:none}
+td.num,th.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.stage{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:4px}
+.stage-h{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.stage-h b{font-family:var(--mono);font-size:12px;color:var(--mint);letter-spacing:.05em}
+.stage-h h3{margin:0}
+.ref{font-size:13px;color:var(--muted)}
+.src{font-size:13px;color:var(--muted)}
+code{font-family:var(--mono);font-size:.9em}
+ol.decisions li{margin-bottom:10px}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">End-to-end plan · for Josh (CEO) · 2 November 2026 · version 2 · prepared by the project director</div>
+  <h1>ProScore Front Desk, end to end</h1>
+  <p class="lede">From a pro first hearing about Front Desk to paying for it and having it answer his phone perfectly. Every step is modelled on a product that already does it well, built from components that already exist, and wired into ProScore without touching anything a pro's score depends on.</p>
+</header>
+
+<section>
+  <h2>What's settled</h2>
+  <div class="verdict">
+    <p><strong>Approved:</strong> Front Desk first, ProScore in Claude after. Incoming calls only, with outgoing calls only to people who asked for a callback. Review requests go to every completed job, never selectively. No lawyer for now, so safe defaults are built in. Free trials go out by email once Front Desk is proven. The standard trial is 14 days, with a 30-day launch offer, and the card is taken at signup.</p>
+    <p><strong>Goal:</strong> Front Desk makes money for ProScore. It has to be the best product in its class at a better price than the trade-specialist competitors, so paying for it is the obvious choice for a pro.</p>
+  </div>
+</section>
+
+<section>
+  <h2>What we model it on</h2>
+  <p>Nothing here is invented. Each part copies the best existing example, studied through public help centres, pricing pages and demos. We don't decompile anyone's app, which the law doesn't allow for this purpose.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Part of Front Desk</th><th>Best example</th><th>What we take from it</th></tr></thead>
+    <tbody>
+      <tr><td>Setup wizard</td><td>Jobber Receptionist</td><td>Six short steps, a greeting you can hear before saving, on/off switches for what the AI may do, ends with the AI calling your phone</td></tr>
+      <tr><td>Building the AI from existing data</td><td>Rosie</td><td>Trained from the Google profile and website into an editable summary, a field for how to pronounce the business name, up to 20 FAQs, nothing live until you press Publish</td></tr>
+      <tr><td>Order of setup</td><td>Dialbox (Toronto)</td><td>Prepare, test, then forward calls last. Calls during the trial don't use up the first paid month</td></tr>
+      <tr><td>Practising before going live</td><td>Goodcall, Smith.ai</td><td>The AI rehearses tricky calls (price shopper, emergency, out of area) and shows the results before it goes live</td></tr>
+      <tr><td>Permissions and emergencies</td><td>Housecall Pro CSR AI</td><td>Separate permission per action. Emergency handling is always on; the pro only chooses how he's told</td></tr>
+      <tr><td>Questions the AI asks</td><td>Workiz Genius</td><td>Custom questions saved into fixed fields; set answers the AI must use word for word; choose when it answers (missed calls, after hours)</td></tr>
+      <tr><td>Calls inbox</td><td>Jobber</td><td>An outcome tag on every call (booked, request, message, escalated, spam), with summary, recording and transcript</td></tr>
+      <tr><td>Texting the customer</td><td>Housecall Pro</td><td>The AI goes quiet when the pro opens the conversation. It confirms only after the action actually worked</td></tr>
+      <tr><td>Dashboard</td><td>Housecall Pro, Workiz</td><td>Revenue from AI-booked jobs, split business hours vs after hours, top call reasons, latest win</td></tr>
+      <tr><td>Usage and limits</td><td>Jobber, Dialbox</td><td>Spam is never counted; alerts at 70%, 90% and 100%; at the limit the pro chooses overage or pause; when paused it still takes messages</td></tr>
+      <tr><td>Cancelling</td><td>Goodcall</td><td>Cancel in one click and keep your setup, unlike Smith.ai's 30-day notice</td></tr>
+      <tr><td>Call becomes a job</td><td>Sameday</td><td>Every call ends as a structured job ticket, not a message someone retypes</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Components we use instead of building</h3>
+  <ul>
+    <li><strong>Retell</strong> (already connected to our Twilio line) runs Claude directly. It also supplies:
+      <ul>
+        <li>one template agent that loads each pro's details when a call arrives;</li>
+        <li>a fixed-order call script for emergency triage;</li>
+        <li>structured extraction of the job from each call;</li>
+        <li>warm transfer that briefs the pro first;</li>
+        <li>Canadian French;</li>
+        <li>automated test calls we can run on every release.</li>
+      </ul></li>
+    <li><strong>Twilio</strong>, for local Ontario numbers, the SIP trunk with an automatic backup route if Retell fails, texting, and lookups that tell mobiles from landlines.</li>
+    <li><strong>Stripe</strong>, for the trial, monthly billing, overage and the HST setup that's already live.</li>
+    <li><strong>ProScore itself</strong>:
+      <ul>
+        <li>portal log-in and per-location billing;</li>
+        <li>SMS and email senders;</li>
+        <li>the one-tap secure link pattern used for leads;</li>
+        <li>Claude helpers;</li>
+        <li>every pro's profile, hours, services and service area.</li>
+      </ul></li>
+    <li><strong>Later:</strong> Cal.com's hosted service for Google and Outlook calendar booking, and a free library for phone-number formatting. We don't copy Cal.com's code: its licence would force us to publish ours.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Price</h2>
+  <p>Every Front Desk plan has every feature. Plans differ only in how many calls they cover. Spam and silent calls are never counted.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>How a pro gets it</th><th class="num">Front Desk add-on</th><th class="num">Total per month</th><th class="num">Calls</th></tr></thead>
+    <tbody>
+      <tr><td>Growth + Front Desk Starter</td><td class="num">+C$69</td><td class="num">C$119</td><td class="num">60</td></tr>
+      <tr><td><strong>Premium (Starter included)</strong></td><td class="num">included</td><td class="num">C$150</td><td class="num">60</td></tr>
+      <tr><td>Premium + Front Desk Pro</td><td class="num">+C$79</td><td class="num">C$229</td><td class="num">150</td></tr>
+      <tr><td>Premium + Front Desk Max</td><td class="num">+C$199</td><td class="num">C$349</td><td class="num">400</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li>Extra calls are C$0.90 each. We alert at 70%, 90% and 100% of the plan.</li>
+    <li>The trial is 14 days as standard, which is twice the market norm. Launch emails offer 30 days for a limited time. The card is taken at signup.</li>
+    <li>Cancel or pause in one click. The setup is kept and forwarding is released, so nobody's number is ever held hostage.</li>
+  </ul>
+  <div class="tbl"><table>
+    <thead><tr><th>Competitor (about 60 calls/month, CAD)</th><th>Price</th><th>What it lacks next to us</th></tr></thead>
+    <tbody>
+      <tr><td>Dialbox (Canadian, bilingual)</td><td>C$129 for 100 calls</td><td>No trade questions or emergency triage, no leads or profile</td></tr>
+      <tr><td>Jobber Receptionist</td><td>about C$41 + a Jobber plan (C$41–560)</td><td>Jobber users only; English only; books without capturing the job</td></tr>
+      <tr><td>Housecall Pro CSR AI</td><td>not published (est. C$280–700) + plan</td><td>Housecall Pro users only; texting still in testing</td></tr>
+      <tr><td>Workiz Genius</td><td>est. C$420 with its phone system</td><td>Workiz users only</td></tr>
+      <tr><td>Sameday</td><td>from C$630</td><td>No Canada or French support</td></tr>
+      <tr><td>Smith.ai AI</td><td>C$210 for 75 calls</td><td>Generic; settings changed through support</td></tr>
+      <tr><td>Rosie / Goodcall / Dialzara</td><td>C$69–139</td><td>Generic; Rosie and Goodcall offer US numbers only</td></tr>
+    </tbody>
+  </table></div>
+  <p class="src">Margin on the add-on is about 45% at full use and about 65% at typical use, based on Retell's published rates. Inside Premium it's comfortable, because Premium's other features cost almost nothing per pro.</p>
+</section>
+
+<section>
+  <h2>What pros need most</h2>
+  <p>This ranking comes from reviews, app stores, trade press and forums. It will be checked against 5 to 8 interviews with our own pros before the build is locked.</p>
+  <ol>
+    <li><strong>Catch every call</strong>, especially after hours and weekends. About 41% of weekend calls to home-service businesses go unanswered.</li>
+    <li><strong>Respond fast.</strong> 83% of homeowners hire whoever responds first.</li>
+    <li><strong>Never promise what the business can't deliver.</strong> No invented prices or times, and no bookings in slots that are taken.</li>
+    <li><strong>Sound professional and human.</strong> Some callers hang up as soon as they hear "AI receptionist".</li>
+    <li><strong>Handle older customers well.</strong></li>
+    <li><strong>Get real emergencies to the pro.</strong> The caller says what's urgent, not a script.</li>
+    <li><strong>Let the pro see and control what was said.</strong> Transcripts, editable answers, and an AI they can teach.</li>
+    <li><strong>Predictable price</strong>, with no surprise charges or price hikes.</li>
+    <li><strong>Accurate details</strong>, in the right fields, matched to existing customers.</li>
+    <li><strong>Follow up on quotes.</strong></li>
+    <li><strong>Filter spam</strong> without hiding real customers.</li>
+    <li><strong>Less admin</strong> and fewer callbacks at night.</li>
+  </ol>
+  <p><strong>Why pros cancel:</strong></p>
+  <ul>
+    <li>price hikes or billing surprises;</li>
+    <li>the phone number stops working or is held after cancelling;</li>
+    <li>customers hang up on the AI;</li>
+    <li>wrong bookings;</li>
+    <li>no human support;</li>
+    <li>real customers marked as spam;</li>
+    <li>cancelling is made hard;</li>
+    <li>quality slips over time.</li>
+  </ul>
+  <p>Front Desk is designed against every item on that list.</p>
+</section>
+
+<section>
+  <h2>Better than every competitor, measured</h2>
+  <p>For each area, the best competitor sets the minimum and we set a measurable target above it. Every target gets checked before launch.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Area</th><th>Best competitor today</th><th>Front Desk target</th></tr></thead>
+    <tbody>
+      <tr><td>Setup</td><td>About 10 minutes, mostly typed in (Jobber)</td><td>Under 10 minutes, pre-filled from the ProScore profile, with forwarding checked live</td></tr>
+      <tr><td>Greeting</td><td>"AI receptionist" announced up front, and callers hang up</td><td>"You've reached Northshore Heating, this is Mike's virtual assistant; calls are recorded." Honest without being off-putting. The pro can edit it, but the disclosure can't be removed</td></tr>
+      <tr><td>Speed and voice</td><td>No published figures; complaints about lag and phone numbers read out wrong</td><td>Replies within 0.8 seconds on 95% of turns. Numbers and addresses are read back digit by digit. Background noise and a natural voice. A slower, clearer mode for older callers</td></tr>
+      <tr><td>Job capture</td><td>"A booking with no idea what it's for"</td><td>Job, address and callback captured on at least 95% of calls, using the trade pack's questions</td></tr>
+      <tr><td>Accuracy</td><td>Wrong bookings and invented answers</td><td>Never invents a price, time or diagnosis. Offers only free slots, which the pro confirms. Says "I'll have Mike confirm"</td></tr>
+      <tr><td>Emergencies</td><td>Keyword alert or transfer</td><td>The caller can declare it urgent. The pro is briefed before transfer, backup contacts are tried in order, call loops are blocked, and the safety script always runs</td></tr>
+      <tr><td>The pro's phone</td><td>Rosie and Quo put a summary in the push alert</td><td>A native app. Emergency alerts break through Do Not Disturb and also arrive by text. Every alert has Call back / Text back / Open buttons. The job ticket shows first</td></tr>
+      <tr><td>Inbox</td><td>Slow, crash-prone field apps (ServiceTitan, Workiz)</td><td>Opens instantly, works offline, calls and texts together per customer, spam hidden but reviewable</td></tr>
+      <tr><td>Control</td><td>"No way to train it" (Jobber). Settings changed through support (Smith.ai)</td><td>Every setting is self-serve and written as plain sentences. FAQs are suggested from real calls. A "why the AI did this" log. An optional first week where the pro reviews before the AI acts</td></tr>
+      <tr><td>Follow-up</td><td>Text-back after a hang-up</td><td>Text-back, a summary within 60 seconds, booking confirmations and reminders, and quote follow-up texts the pro approves</td></tr>
+      <tr><td>Reliability</td><td>Competitor outages left calls unanswered</td><td>If the AI service fails, calls go to the pro's cell and voicemail. Health is monitored, with alerts</td></tr>
+      <tr><td>Price and exit</td><td>Hidden prices, price hikes, cancellation friction</td><td>Published price, alerts before limits, one-click cancel, the number released</td></tr>
+      <tr><td>Language</td><td>Only Dialbox and Workiz offer French; Quo's summaries are English only</td><td>English and French calls, summaries, interface and alerts</td></tr>
+      <tr><td>Support</td><td>Support replaced by AI (Housecall Pro reviews)</td><td>A real person answers setup and billing questions</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>How calls reach Front Desk</h2>
+  <ul>
+    <li><strong>Most pros use their cell as the business number.</strong> They dial one code once to set conditional forwarding. The phone rings as normal; if it isn't answered in about 20 seconds, is busy or is off, the call goes to the pro's private Front Desk number. After hours, the phone's Do Not Disturb sends calls to Front Desk. Homeowners keep dialling the same number.</li>
+    <li><strong>Pros with a separate business line</strong> forward it to Front Desk completely. Front Desk rings their cell first during business hours, then the AI answers. After hours the AI answers straight away. The schedule is set in the portal, with no codes to re-dial.</li>
+    <li>Setup gives each carrier's exact codes, warns Rogers users to turn off carrier voicemail, and confirms forwarding with a live test call.</li>
+    <li><strong>Emergencies:</strong> "I'm connecting you to Mike now." Mike hears a briefing ("no heat, infant at home, 14 Elm St, press 1"), then is connected. If he doesn't answer, Front Desk tries his backup contacts in order, then sends an urgent text, and tells the caller when to expect a callback. A saved "Front Desk – EMERGENCY" contact card helps him recognise the call at 2 am. If his phone is off, the loop guard stops the call bouncing back to Front Desk.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Where bookings go</h2>
+  <ol>
+    <li><strong>From day one, for every pro:</strong> ProScore keeps the booking. Each confirmed booking emails the pro a standard calendar invite that adds to Google, Outlook or iPhone calendar with one tap. The homeowner gets a confirmation and a reminder, and the booking shows in the portal.</li>
+    <li><strong>Google and Outlook connection:</strong> one sign-in. Front Desk then sees the pro's busy times and writes bookings straight into the calendar. This needs Google's app verification (2–4 weeks), which Josh files from ProScore's Google account.</li>
+    <li><strong>Jobber connection</strong> next. Other systems follow only if pros ask.</li>
+  </ol>
+  <p>Setup asks one question: "Where do you keep your schedule?" The answer picks the path. The pro confirms each booking with one tap, so double-booking can't happen even before his calendar is connected.</p>
+</section>
+
+<section>
+  <h2>One account serves every pro</h2>
+  <p>One ProScore account each in Twilio and Retell covers every pro. Each pro gets their own local number, tagged to them in our database. One shared receptionist template loads each pro's details, trade pack and settings the moment a call arrives on that pro's number. We pay one bill to each vendor and charge pros through Stripe. Retell's 20 simultaneous calls covers well past 50 pros. A Front Desk admin screen shows every pro's number, setup state, usage, failed checks and payments, with automatic alerts.</p>
+</section>
+
+<section>
+  <h2>The pro's journey, step by step</h2>
+  <p>Our example pro is Mike, a two-truck HVAC owner in Barrie on ProScore's free plan. Each stage lists what he sees, what happens behind it, and which product it's modelled on.</p>
+
+  <div class="stage">
+    <div class="stage-h"><b>1 · DISCOVER</b><h3>Mike learns about Front Desk</h3></div>
+    <ul>
+      <li>He sees it on the pricing page, as a Front Desk tile in his portal, and in launch emails.</li>
+      <li>"Hear it answer": he calls a public demo line that answers as a sample HVAC company. A second call from the same phone is greeted by name.</li>
+      <li>He can also try a role-play demo in the browser, with no signup.</li>
+      <li>A missed-call calculator uses his trade's typical job value.</li>
+    </ul>
+    <p class="ref">Modelled on: Jobber's demo line, Housecall Pro's browser demo.</p>
+  </div>
+
+  <div class="stage">
+    <div class="stage-h"><b>2 · START TRIAL</b><h3>Two minutes to start</h3></div>
+    <ul>
+      <li>Portal → Front Desk → "Start your free trial". He picks a plan, then completes Stripe checkout with card, billing address and HST.</li>
+      <li>He returns straight into the setup wizard.</li>
+      <li>Behind the scenes, provisioning starts right away. A local 705 number is bought, connected to the AI and given its backup route.</li>
+    </ul>
+    <p class="ref">Front Desk is its own Stripe subscription, completely separate from his ProScore plan.</p>
+  </div>
+
+  <div class="stage">
+    <div class="stage-h"><b>3 · SET UP</b><h3>Six steps, about 10 minutes, mostly pre-filled</h3></div>
+    <ol>
+      <li><strong>Review what it will say.</strong> Built from his ProScore profile: business name (with a pronunciation field), services, hours and service area. "Built from your ProScore profile, review 6 items."</li>
+      <li><strong>Choose what it may do.</strong> Switches for take a message, request a booking, transfer, and text back missed calls. Coverage: after hours, missed calls, overflow, or always.</li>
+      <li><strong>Emergencies.</strong> HVAC keywords are preset (no heat, gas smell, CO alarm, water leaking). He enters his emergency cell and chooses a live transfer or an urgent text. Gas and CO calls always tell the caller to leave the building and call the gas utility or 911 first; the pro can't switch this off.</li>
+      <li><strong>Hear it and test it.</strong> He plays the greeting in the chosen voice and picks English, French or both. The AI calls his phone. Six practice calls run (price shopper, emergency, out of area, French caller, angry caller, spam), each with pass or fix. Then he presses Publish.</li>
+      <li><strong>Forward your calls.</strong> He picks his carrier (Bell, Rogers, Telus, Fido, Koodo, Virgin, Freedom or a VoIP system) and gets the exact codes, with a tap-to-dial link on mobile. Rogers users are warned to turn off carrier voicemail first, or forwarding won't work.</li>
+      <li><strong>Check it works.</strong> We call his business line and he doesn't answer. When the call reaches Front Desk the screen turns green and Front Desk is live. If it fails, the screen shows the carrier-specific fix.</li>
+    </ol>
+    <p class="ref">Modelled on: Jobber's wizard, Rosie's profile training and Publish step, Dialbox's test-before-forward order, Goodcall and Smith.ai's practice calls. Every carrier guide skips the live check; we add it because Telus and Koodo codes are reported to fail.</p>
+  </div>
+
+  <div class="stage">
+    <div class="stage-h"><b>4 · A CALL COMES IN</b><h3>9:40 pm, a homeowner's furnace is out</h3></div>
+    <ol>
+      <li>The call goes to Mike's phone, he doesn't answer, and it forwards to Front Desk.</li>
+      <li>"Thanks for calling Northshore Heating. I'm their AI assistant, and calls are recorded. Is anyone in danger right now, or is there a gas smell or CO alarm?"</li>
+      <li>The AI takes the job: the problem, furnace type and age, indoor temperature, anyone vulnerable in the home, the address (checked against his service area), and a callback number.</li>
+      <li>Callers with ProScore leads are recognised: "you requested a quote on Oct 30".</li>
+      <li><strong>Emergency (no heat, infant in the home):</strong> a warm transfer to Mike's cell, with a short spoken summary first. If he doesn't answer, he gets an urgent text and the caller is told Mike has been alerted. The AI never promises an arrival time.</li>
+      <li><strong>Not urgent:</strong> the AI offers two windows from Mike's slot rules ("tomorrow 8–10 am or 1–3 pm") and says Mike will confirm.</li>
+      <li><strong>If the caller hangs up early:</strong> a text-back within a minute, at most once a day per caller, with STOP honoured.</li>
+      <li><strong>If the AI service itself is down:</strong> the call goes straight to Mike's cell, then to voicemail, and the transcript is texted to him. No call is ever lost.</li>
+    </ol>
+  </div>
+
+  <div class="stage">
+    <div class="stage-h"><b>5 · MIKE IS TOLD</b><h3>A summary in under a minute</h3></div>
+    <ul>
+      <li>A text: "No heat · Furnace (gas, ~12 yrs) · 14 Elm St, Barrie · Callback 705-555-0142 · Wants tomorrow 8–10 am. [Confirm 8–10] [Confirm 1–3] [View call]". The same summary comes by email.</li>
+      <li>He taps "Confirm 8–10" and the homeowner gets a confirmation text from Mike's Front Desk number. A reminder goes the evening before.</li>
+      <li>Each link works once, and opening it doesn't confirm anything until he taps the button.</li>
+      <li>If the homeowner texts back, the AI replies. When Mike opens the conversation the AI goes quiet, and it starts again 10 minutes after he leaves.</li>
+    </ul>
+    <p class="ref">Modelled on: Housecall Pro's takeover and confirm-only-after-success, Jobber's text-back rules, ProScore's existing one-tap lead links.</p>
+  </div>
+
+  <div class="stage">
+    <div class="stage-h"><b>6 · MANAGE</b><h3>The Front Desk area of the portal</h3></div>
+    <div class="tbl"><table>
+      <thead><tr><th>Page</th><th>What Mike does there</th></tr></thead>
+      <tbody>
+        <tr><td>Overview</td><td>Calls answered this month, how many after hours, emergencies routed, bookings, estimated revenue from AI-booked jobs, latest win, minutes used</td></tr>
+        <tr><td>Calls</td><td>Inbox with outcome tags and filters; each call shows summary, job details, transcript, recording, link to a ProScore lead, and notes</td></tr>
+        <tr><td>Bookings</td><td>Requests waiting for him, confirmed, declined and expired; confirm or propose another time</td></tr>
+        <tr><td>AI settings</td><td>Greeting, pronunciation, voice, languages, trade questions, FAQ (up to 20), set answers, emergency keywords. Changes go live only on Publish, after a re-test</td></tr>
+        <tr><td>Settings</td><td>Coverage mode, hours, emergency cell, who gets alerts, text-back, booking windows, forwarding help and re-check</td></tr>
+        <tr><td>Usage and billing</td><td>Calls used against the plan, alerts at 70/90/100%, choose pay-as-you-go or pause at the limit, invoices, change plan, pause or cancel in one click</td></tr>
+      </tbody>
+    </table></div>
+    <p class="ref">Works on his phone through the portal. There's no app to install in version 1; alerts come by text.</p>
+  </div>
+
+  <div class="stage">
+    <div class="stage-h"><b>7 · TRIAL ENDS, HE PAYS</b><h3>No surprises</h3></div>
+    <ul>
+      <li><strong>Day 10:</strong> a recap email and portal banner, e.g. "Front Desk answered 34 calls, 19 after hours, 2 emergencies sent to you, 6 jobs booked, worth about $4,100." These figures come from his own calls, not industry averages.</li>
+      <li><strong>Day 14</strong> (or day 30 on the launch offer): billing starts on the card he gave. He gets an invoice with HST.</li>
+      <li><strong>Pause or cancel</strong> takes one click and keeps his setup. His calls go straight to his cell for 30 days, and he gets instructions to remove forwarding. A forwarded call is never dropped.</li>
+      <li><strong>Failed payment:</strong> Stripe retries for 14 days and Front Desk keeps working. After that, calls pass straight through to him.</li>
+    </ul>
+  </div>
+
+  <div class="stage">
+    <div class="stage-h"><b>8 · IT WORKS PERFECTLY</b><h3>What "perfectly" means, as tests we run before launch</h3></div>
+    <ul>
+      <li>From checkout to live in under 15 minutes, with no help from us.</li>
+      <li>100% of test calls get the AI disclosure, and 100% of gas and CO calls are told to leave and call before anything else.</li>
+      <li>At least 95% of calls capture the job, address and callback. No invented prices, on any test.</li>
+      <li>Emergency transfers reach the pro's cell every time, or he gets the urgent text.</li>
+      <li>He has the summary within 60 seconds of every call. The AI starts replying within 1 second in 95% of turns.</li>
+      <li>When we deliberately break the AI service, every call still reaches the pro's cell or voicemail.</li>
+      <li>The invoice is correct: plan, overage and HST.</li>
+      <li>Buying, changing or cancelling Front Desk never changes his ProScore plan or score.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>Trade knowledge: expert enough to book the job</h2>
+  <p>The AI doesn't need to be a tradesperson. It needs to be a very good dispatcher for each of our 11 trades. It must understand what the caller describes, ask the right questions, spot emergencies, answer common questions at a basic level, and know when to say "the technician will cover that".</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Each trade pack holds</th><th>Example (HVAC)</th></tr></thead>
+    <tbody>
+      <tr><td>Job types we book</td><td>Furnace repair, AC repair, tune-up, install quote, water heater, thermostat, duct cleaning</td></tr>
+      <tr><td>What callers say, mapped to a job</td><td>"Blowing cold air", "short-cycling", "pilot won't stay lit" → furnace repair</td></tr>
+      <tr><td>Questions per job type</td><td>Gas or electric? Unit age? Error code? Indoor temperature?</td></tr>
+      <tr><td>Emergency triggers and safety script</td><td>Gas smell, CO alarm, no heat with an infant or elderly person, water near the furnace</td></tr>
+      <tr><td>Common questions and set answers</td><td>"Do you service Lennox?", "Is there a diagnostic fee?", "Do I need a permit?"</td></tr>
+      <tr><td>Vocabulary and brands, in English and French</td><td>Condenser, heat exchanger, Carrier, Lennox, fournaise, thermopompe</td></tr>
+      <tr><td>Ontario specifics</td><td>Enbridge, TSSA gas licensing, ESA permits, CO alarm law</td></tr>
+      <tr><td>Never say</td><td>No diagnosis, no price the pro didn't set, no DIY advice on gas or electrical</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><strong>Two call types, two flows.</strong> Service calls go triage first: plumbing, HVAC, electrical, roofing leaks, and trees down on a house or wires. Estimate visits capture the scope (project, size, timeline, budget range, photos by text): general contractors, kitchen, bathroom, drywall, landscaping and most pest control.</li>
+    <li><strong>The pro's own details sit on top</strong>: services, brands, fees or price ranges, service area, and what they don't do.</li>
+    <li><strong>Four checks before a pack ships.</strong>
+      <ol>
+        <li>An agent drafts it from cited authoritative sources (ESA, TSSA, Enbridge, Hydro One, Fire Marshal, HRAI, ISA, SPMAO, manufacturer guides).</li>
+        <li>A second agent checks every claim against its source.</li>
+        <li>A licensed pro in that trade reviews it in about an hour. These are ProScore's top-scored pros, offered three free months of Front Desk.</li>
+        <li>50 or more simulated callers per trade must pass.</li>
+      </ol>
+    </li>
+    <li><strong>Unsure means it never guesses.</strong> "I'll make sure the technician has that before they come out." The question goes on the job ticket.</li>
+    <li><strong>It keeps learning.</strong> Every call is checked against the pack. Unanswered questions go on a weekly review list, and approved answers are added to the pack.</li>
+    <li><strong>A trade can buy Front Desk only once its pack has passed all four checks.</strong> Plumbing, HVAC and electrical first, then roofing, then the other seven within 3–4 weeks of launch.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>How it fits into ProScore</h2>
+  <ul>
+    <li><strong>It lives inside ProScore</strong>, not as a separate service. That gives one login, one bill, one database and all of ProScore's security checks. We copy the useful parts of AMP's code and harden them. AMP's own database stays separate and untouched.</li>
+    <li><strong>The data is locked down.</strong> Every new table is readable only by the server. Transcripts are deleted after 90 days. Recordings aren't copied; they're played through a secure link when needed.</li>
+    <li><strong>Billing is fenced off.</strong> The research found that today's payment handling would treat a Front Desk subscription as a ProScore plan change. A paying Growth pro who added Front Desk could be dropped to the free plan. So Front Desk gets its own Stripe subscription, its own markers, and a separate branch in payment handling, with a test proving a ProScore plan can never be touched.</li>
+    <li><strong>It never feeds the score.</strong> Front Desk writes nothing the scorer or response-time measures read, so paying can't raise a score. Calls only link to ProScore leads; they never create billable leads.</li>
+    <li><strong>Each location has its own Front Desk.</strong> It is keyed to the location, so multi-location pros buy one per location, the same way their plans work today.</li>
+    <li><strong>Who can buy.</strong> Any pro with a ProScore account, including the free plan. Front Desk is the reason to pay.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Build order and gates</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Weeks</th><th>Milestone</th><th>Must prove before moving on</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><strong>M0 Foundations.</strong> Front Desk area in Twilio, number rules for Canada, Retell workspace, Stripe test product. Confirm the current Retell connection address (Retell retired an old one on 30 Sep).</td><td>A test number answers through Retell with Claude; replies start in under 1 second on 95% of turns</td></tr>
+      <tr><td>2</td><td><strong>M1 Calls in, safely.</strong> Database tables, the hardened call webhook, the backup route to the pro's cell.</td><td>Forged webhooks rejected; no duplicate records; calls survive a deliberately broken AI service</td></tr>
+      <tr><td>3</td><td><strong>M2 After the call.</strong> Job details, summary text and email, text-back, STOP handling, consent records, daily caps.</td><td>Summary in 60 seconds; STOP blocks every later text; no personal data in logs</td></tr>
+      <tr><td>4</td><td><strong>M3 Emergencies and bookings.</strong> Warm transfer, urgent alert, one-tap confirm, homeowner confirmation and reminder.</td><td>Emergencies always reach the pro; each confirm link works once; opening a link changes nothing</td></tr>
+      <tr><td>5</td><td><strong>M4 Billing.</strong> Checkout, trial, separate payment handling, access checks.</td><td>A Front Desk purchase, change, refund or cancel never alters a ProScore plan; HST correct</td></tr>
+      <tr><td>6–7</td><td><strong>M5 Self-serve setup.</strong> Automatic number setup, the six-step wizard, carrier guide and live check, portal pages.</td><td>Checkout to live in under 15 minutes on a real phone; a crash never buys a second number</td></tr>
+      <tr><td>7–8</td><td><strong>M6 Usage and lifecycle.</strong> Call counting, alerts, overage, pause and cancel to pass-through, number release.</td><td>Invoices correct in test mode; no forwarded call dropped after cancel</td></tr>
+      <tr><td>8–9</td><td><strong>M7 Proof.</strong> Practice-call test suite in CI, real calls on your line and 2–3 friendly pros, lead linking, polish.</td><td>Every item in stage 8 passes</td></tr>
+      <tr><td>10</td><td><strong>Launch.</strong> Pricing page, trial emails to the 55 accounts and the first outreach wave.</td><td>Your sign-off</td></tr>
+      <tr><td>11+</td><td>ProScore in Claude; Google and Outlook calendar booking</td><td>As in version 1 of this plan</td></tr>
+    </tbody>
+  </table></div>
+  <p class="src">About 11–12 weeks to launch, including the phone app and App Store review. Every milestone gets an independent review before merge, as ProScore's rules require. You get a pass/fail report at each gate.</p>
+</section>
+
+<section>
+  <h2>What could go wrong, and our answer</h2>
+  <div class="caution">
+    <p><strong>Call forwarding fails on some carriers.</strong> The live check in setup catches it, and the pro can take a local Front Desk number for after hours instead.</p>
+    <p><strong>Texts get filtered by Canadian carriers.</strong> Booking confirmations go from a verified number. If carriers block the pros' local numbers, we file a toll-free verification, which takes weeks, so I'll check this in M0.</p>
+    <p><strong>Canada may need business documents per number.</strong> Twilio can require proof of address for local numbers. Checked in M0; if needed, one company registration covers all pros.</p>
+    <p><strong>The AI service goes down</strong> (about twice a month in 2026). The backup route sends calls to the pro's cell and voicemail.</p>
+    <p><strong>No lawyer has reviewed it.</strong> We ship the safest defaults the research supports:</p>
+    <ul>
+      <li>AI and recording disclosure on every call;</li>
+      <li>no calls we place to people who didn't ask;</li>
+      <li>consent records for every number we text;</li>
+      <li>STOP on every channel;</li>
+      <li>90-day deletion of transcripts.</li>
+    </ul>
+    <p><strong>The emergency questions are safety-critical.</strong> Gas and CO wording quotes Enbridge and the Fire Marshal exactly. A licensed tradesperson you trust should read the trade questions before launch.</p>
+  </div>
+</section>
+
+<section>
+  <h2>What I need from you</h2>
+  <ol class="decisions">
+    <li><strong>Pricing:</strong>
+      <ul>
+        <li>Growth + Starter at +C$69</li>
+        <li>Premium includes Starter</li>
+        <li>Pro (+C$79) and Max (+C$199) as upgrades on Premium only</li>
+        <li>every feature on every plan</li>
+        <li>C$0.90 per extra call</li>
+      </ul>
+    </li>
+    <li><strong>Trial:</strong> 14 days as standard, card at signup, and a 30-day launch offer with a deadline.</li>
+    <li><strong>Access:</strong> Front Desk setup in Twilio, Retell and Stripe test mode.</li>
+    <li><strong>Trade reviewers:</strong> top-scored ProScore pros review their trade's pack in exchange for three free months.</li>
+    <li><strong>Interviews:</strong> 5–8 of our pros, 10 minutes each, using the interview script.</li>
+    <li><strong>Testing:</strong> your phone line plus 2–3 friendly pros for real calls.</li>
+    <li><strong>Google Calendar verification</strong>, filed by you, which I prepare.</li>
+    <li><strong>Apple and Google developer accounts</strong> for the phone app (about C$140 a year in total), in ProScore's name.</li>
+  </ol>
+  <p>Once you answer, M0 starts and the first gate report follows.</p>
+</section>
+</div>
