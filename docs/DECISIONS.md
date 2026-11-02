@@ -1563,3 +1563,43 @@ c. CEO places test call to +1 (249) 444-8711. Verify conversations row
 
 Rollback: phoneNumber.delete removes Retell's claim on the number. Deleting
 the SIP trunk reverts the Twilio side. Both are clean operations.
+
+---
+
+## ADR-009 — ProScore Front Desk Is ProScore-Owned; AMP Code Is a Source, Not a Host
+
+**Date:** 2026-11-02
+**Status:** Accepted (records a CEO decision already made; see the Front Desk handoff of 2026-11-02)
+**Decided by:** CEO (Josh)
+**Supersedes:** None
+**Superseded by:** None
+
+### Context
+
+ProScore Front Desk is an AI receptionist for ProScore pros (Ontario trades): it answers missed, after-hours and overflow calls, captures the job, routes emergencies, books and follows up, in English and French. Much of its voice plumbing already exists in AMP (`lib/retell.ts`, `lib/twilio.ts`, the Retell webhook under `app/api/webhooks/`). The question is where Front Desk lives and who owns it.
+
+### Decision
+
+Front Desk is a **ProScore product**, built inside the FinderHub repository against ProScore's Supabase project, billed through ProScore's Stripe account as a separate subscription (`metadata.product = front_desk`). The FinderHub-side architecture is recorded in FinderHub `docs/architecture/ADR-015-front-desk.md`.
+
+For AMP this means:
+
+1. **AMP's code is ported by hand, not shared.** Front Desk copies and hardens `lib/retell.ts`, `lib/twilio.ts` and the Retell webhook into FinderHub. There is no runtime dependency from FinderHub on AMP, no shared package, and no cross-repo import.
+2. **AMP's database is untouched.** No Front Desk table, row, migration or credential is added to AMP's Supabase project.
+3. **AMP's telephony is untouched.** Front Desk runs in its own Twilio sub-account ("ProScore Front Desk", `FD_TWILIO_*` credentials) and its own Retell workspace (`FD_RETELL_API_KEY`). AMP's Twilio credentials, AMP's SIP trunk and AMP's number +1 (249) 444-8711 are not used or modified by Front Desk work, and Front Desk resources must not be created with AMP's credentials.
+4. **Fixes flow both ways by hand.** If Front Desk hardening finds a defect that also exists in AMP's copy (for example webhook signature verification or idempotency), it is reported here as a separate AMP change; it is not silently assumed fixed.
+
+### Alternatives considered
+
+**Build Front Desk in AMP and expose it to ProScore over an API.** Rejected: Front Desk is ProScore revenue, sold to ProScore pros and keyed on ProScore locations. Hosting it in AMP would mean a second database holding ProScore customer PII, a second auth model, and cross-product billing.
+
+**Extract a shared voice package used by both repos.** Deferred: two consumers with diverging requirements do not yet justify the coordination cost. Revisit if a third product needs the same plumbing (cf. ADR-006, monorepo deferred).
+
+### Trade-offs accepted
+
+- Two copies of the Retell/Twilio integration can drift. Accepted; rule 4 above is the mitigation.
+- AMP work does not benefit from Front Desk's production traffic data.
+
+### What would change this decision
+
+A decision to merge ProScore and AMP into one platform, or a third product needing the same voice layer.
