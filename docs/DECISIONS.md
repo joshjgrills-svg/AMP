@@ -1563,3 +1563,43 @@ c. CEO places test call to +1 (249) 444-8711. Verify conversations row
 
 Rollback: phoneNumber.delete removes Retell's claim on the number. Deleting
 the SIP trunk reverts the Twilio side. Both are clean operations.
+
+---
+
+## ADR-009 — ProScore Front Desk Is a ProScore Product, Not an AMP Product
+
+**Date:** 2026-11-02
+**Status:** Proposed — awaiting CEO (Josh)
+**Decided by:** CEO (Josh) — Front Desk build location settled in the 2026-11-02 handoff; this entry records it
+**Supersedes:** None
+**Superseded by:** None
+**Related:** FinderHub `docs/architecture/ADR-015-front-desk.md`
+
+### Context
+
+ProScore Front Desk is an AI receptionist for ProScore pros (Ontario trades). AMP already holds a
+working voice path — `lib/retell.ts`, `lib/twilio.ts`, `app/api/webhooks/retell/v1/route.ts` and a
+Twilio SIP trunk to Retell (ADR-003 Phase 4). The question was whether Front Desk runs on AMP or
+inside ProScore.
+
+### Decision
+
+Front Desk is built and owned inside the ProScore (`FinderHub`) repo and the ProScore Supabase
+project. AMP's code is a **reference**: the useful parts are ported into ProScore by hand and
+hardened there. Nothing in ProScore imports, calls or deploys AMP code.
+
+- **AMP's database is untouched** — no Front Desk table, row or migration lands in it.
+- **AMP's Twilio and Retell resources are untouched.** Front Desk uses its own Twilio sub-account
+  ("ProScore Front Desk") and its own Retell key. The AMP trunk, number +12494448711 and agent
+  `agent_0e211c256211ef2ead23cc8375` are not re-pointed, shared or deleted.
+- A change in AMP cannot break a pro's phone, and a Front Desk change needs no AMP deploy.
+
+### Alternatives considered
+
+**Run Front Desk on AMP.** Rejected: the pro's login, location, membership and billing all live in
+ProScore; running on AMP means a second login, a second bill and a sync between two databases.
+
+### What would change this decision
+
+AMP becoming the shared voice runtime for several products, with its own customers — then a
+shared adapter package (not a shared database) would be the next ADR.
